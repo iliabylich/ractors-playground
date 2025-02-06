@@ -1,0 +1,18 @@
+PATH
+  remote: atomic_counter
+  specs:
+    atomic_counter (0.1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  arm64-darwin-24
+  ruby
+
+DEPENDENCIES
+  atomic_counter!
+
+BUNDLED WITH
+   2.6.2

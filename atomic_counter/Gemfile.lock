@@ -1,0 +1,23 @@
+PATH
+  remote: .
+  specs:
+    atomic_counter (0.1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    rake (13.2.1)
+    rake-compiler (1.2.9)
+      rake
+
+PLATFORMS
+  arm64-darwin-24
+  ruby
+
+DEPENDENCIES
+  atomic_counter!
+  rake (~> 13.0)
+  rake-compiler
+
+BUNDLED WITH
+   2.6.2
