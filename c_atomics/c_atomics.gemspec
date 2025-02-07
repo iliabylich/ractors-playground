@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "lib/atomic_counter/version"
+require_relative "lib/c_atomics/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "atomic_counter"
-  spec.version = AtomicCounter::VERSION
+  spec.name = "c_atomics"
+  spec.version = CAtomics::VERSION
   spec.authors = ["Ilya Bylich"]
   spec.email = ["ibylich@gmail.com"]
 
@@ -32,7 +32,7 @@ Gem::Specification.new do |spec|
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-  spec.extensions = ["ext/atomic_counter/extconf.rb"]
+  spec.extensions = ["ext/c_atomics/extconf.rb"]
 
   # Uncomment to register a new dependency of your gem
   # spec.add_dependency "example-gem", "~> 1.0"

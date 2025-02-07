@@ -7,4 +7,8 @@ require "mkmf"
 # selectively, or entirely remove this flag.
 append_cflags("-fvisibility=hidden")
 
-create_makefile("atomic_counter/atomic_counter")
+rust_atomics_path = File.expand_path("../../../../rust-atomics", __FILE__)
+$INCFLAGS << " -I#{rust_atomics_path}"
+$LDFLAGS << " -L#{rust_atomics_path}/target/release -lrust_atomics"
+
+create_makefile("c_atomics/c_atomics")

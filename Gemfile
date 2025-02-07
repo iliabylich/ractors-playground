@@ -1,3 +1,3 @@
 source "https://rubygems.org"
 
-gem 'atomic_counter', path: './atomic_counter'
+gem 'c_atomics', path: './c_atomics'

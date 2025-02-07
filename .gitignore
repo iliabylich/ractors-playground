@@ -1,2 +1,5 @@
 target
 Cargo.lock
+compile_commands.json
+*.data
+.cache

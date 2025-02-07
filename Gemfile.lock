@@ -1,7 +1,7 @@
 PATH
-  remote: atomic_counter
+  remote: c_atomics
   specs:
-    atomic_counter (0.1.0)
+    c_atomics (0.1.0)
 
 GEM
   remote: https://rubygems.org/
@@ -12,7 +12,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  atomic_counter!
+  c_atomics!
 
 BUNDLED WITH
    2.6.2

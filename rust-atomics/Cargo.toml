@@ -1,0 +1,15 @@
+[package]
+name = "rust-atomics"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+dashmap = "6.1.0"
+
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1

@@ -7,29 +7,43 @@ Ractor.new {}
 
 CPU_COUNT = `cat /proc/cpuinfo | grep processor | wc -l`.to_i
 puts "CPU count: #{CPU_COUNT}"
-ITER_COUNT = 1_000_000
+ITER_COUNT = 100_000
 puts "Iterations: #{ITER_COUNT}"
 
 def assert_eq(lhs, rhs, message)
     raise "#{message}: #{lhs} != #{rhs}" if lhs != rhs
 end
 
+Key = Struct.new(:text)
+KEYS = Ractor.make_shareable(1.upto(20).map { |n| Key.new("key#{n}") })
+
+class ConcurrentHashMap
+    def self.with_keys
+        map = new
+        KEYS.each { |key| map.set(key, 0) }
+        map
+    end
+
+    def inc_random_value = fetch_and_modify(KEYS.sample) { |v| v + 1 }
+    def sum = KEYS.map { |k| get(k) }.sum
+end
+
 def do_seq
-    cnt = AtomicCounter.new
-    (CPU_COUNT * ITER_COUNT).times { cnt.increment }
-    assert_eq(cnt.read, (CPU_COUNT * ITER_COUNT), 'buggy counter')
+    map = ConcurrentHashMap.with_keys
+    (CPU_COUNT * ITER_COUNT).times { map.inc_random_value }
+    assert_eq map.sum, CPU_COUNT * ITER_COUNT, 'buggy counter'
 end
 
 def do_ractors
-    cnt = AtomicCounter.new
+    map = ConcurrentHashMap.with_keys
     ractors = 1.upto(CPU_COUNT).map do |i|
-        Ractor.new(cnt) do |cnt|
-            ITER_COUNT.times { cnt.increment }
+        Ractor.new(map) do |map|
+            ITER_COUNT.times { map.inc_random_value }
             Ractor.yield :done
         end
     end
-    assert_eq(ractors.map(&:take), [:done] * CPU_COUNT, 'not all workers have finished successfully')
-    assert_eq(cnt.read, CPU_COUNT * ITER_COUNT, 'race condition')
+    assert_eq ractors.map(&:take), [:done] * CPU_COUNT, 'not all workers have finished successfully'
+    assert_eq map.sum, CPU_COUNT * ITER_COUNT, 'race condition'
 end
 
 def do_benchmark
