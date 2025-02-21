@@ -35,23 +35,23 @@ impl ConcurrentHashMap {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn concurrent_hash_map_init(hashmap: *mut ConcurrentHashMap) {
     unsafe { hashmap.write(ConcurrentHashMap::new()) }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn concurrent_hash_map_drop(hashmap: *mut ConcurrentHashMap) {
     unsafe { std::ptr::drop_in_place(hashmap) };
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn concurrent_hash_map_clear(hashmap: *const ConcurrentHashMap) {
     let hashmap = unsafe { hashmap.as_ref().unwrap() };
     hashmap.clear();
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn concurrent_hash_map_get(
     hashmap: *const ConcurrentHashMap,
     key: c_ulong,
@@ -61,7 +61,7 @@ pub extern "C" fn concurrent_hash_map_get(
     hashmap.get(key).unwrap_or(fallback)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn concurrent_hash_map_set(
     hashmap: *const ConcurrentHashMap,
     key: c_ulong,
@@ -71,7 +71,7 @@ pub extern "C" fn concurrent_hash_map_set(
     hashmap.set(key, value);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn concurrent_hash_map_mark(
     hashmap: *const ConcurrentHashMap,
     f: extern "C" fn(c_ulong),
@@ -80,7 +80,7 @@ pub extern "C" fn concurrent_hash_map_mark(
     hashmap.mark(f);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn concurrent_hash_map_fetch_and_modify(
     hashmap: *const ConcurrentHashMap,
     key: c_ulong,

@@ -10,8 +10,6 @@
 
 #define CONCURRENT_HASH_MAP_SIZE 40
 
-#define CONCURRENT_HASH_MAP_ALIGN 8
-
 typedef struct atomic_counter_t atomic_counter_t;
 
 typedef struct concurrent_hash_map_t concurrent_hash_map_t;
