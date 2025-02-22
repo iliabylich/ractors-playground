@@ -3,5 +3,6 @@ include_guard = "RUST_ATOMICS_H"
 style = "type"
 
 [export.rename]
+"PlainCounter" = "plain_counter_t"
 "AtomicCounter" = "atomic_counter_t"
 "ConcurrentHashMap" = "concurrent_hash_map_t"

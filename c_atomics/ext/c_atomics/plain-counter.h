@@ -1,0 +1,37 @@
+#include "ruby.h"
+#include "rust-atomics.h"
+
+const rb_data_type_t plain_counter_data = {
+    .function = {.dfree = RUBY_DEFAULT_FREE},
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE};
+
+VALUE rb_plain_counter_alloc(VALUE klass) {
+  plain_counter_t *rust_obj;
+  TypedData_Make_Struct0(obj, klass, plain_counter_t, PLAIN_COUNTER_SIZE,
+                         &plain_counter_data, rust_obj);
+  plain_counter_init(rust_obj, 0);
+  VALUE rb_cRactor = rb_const_get(rb_cObject, rb_intern("Ractor"));
+  rb_funcall(rb_cRactor, rb_intern("make_shareable"), 1, obj);
+  return obj;
+}
+
+VALUE rb_plain_counter_increment(VALUE self) {
+  plain_counter_t *rust_obj;
+  TypedData_Get_Struct(self, plain_counter_t, &plain_counter_data, rust_obj);
+  plain_counter_increment(rust_obj);
+  return Qnil;
+}
+
+VALUE rb_plain_counter_read(VALUE self) {
+  plain_counter_t *rust_obj;
+  TypedData_Get_Struct(self, plain_counter_t, &plain_counter_data, rust_obj);
+  return LONG2FIX(plain_counter_read(rust_obj));
+}
+
+static void init_plain_counter(void) {
+  VALUE rb_cPlainCounter = rb_define_class("PlainCounter", rb_cObject);
+  rb_define_alloc_func(rb_cPlainCounter, rb_plain_counter_alloc);
+  rb_define_method(rb_cPlainCounter, "increment", rb_plain_counter_increment,
+                   0);
+  rb_define_method(rb_cPlainCounter, "read", rb_plain_counter_read, 0);
+}

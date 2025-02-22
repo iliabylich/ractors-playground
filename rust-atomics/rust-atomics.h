@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define PLAIN_COUNTER_SIZE 8
+
 #define ATOMIC_COUNTER_SIZE 8
 
 #define CONCURRENT_HASH_MAP_SIZE 40
@@ -13,6 +15,14 @@
 typedef struct atomic_counter_t atomic_counter_t;
 
 typedef struct concurrent_hash_map_t concurrent_hash_map_t;
+
+typedef struct plain_counter_t plain_counter_t;
+
+void plain_counter_init(plain_counter_t *counter, uint64_t n);
+
+void plain_counter_increment(plain_counter_t *counter);
+
+uint64_t plain_counter_read(const plain_counter_t *counter);
 
 void atomic_counter_init(atomic_counter_t *counter, uint64_t n);
 
