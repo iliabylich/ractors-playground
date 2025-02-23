@@ -1,5 +1,5 @@
 use parking_lot::{Condvar, Mutex};
-use std::{collections::VecDeque, ffi::c_ulong, time::Duration};
+use std::{collections::VecDeque, ffi::c_ulong};
 
 pub struct Queue {
     queue: Mutex<VecDeque<c_ulong>>,
@@ -32,7 +32,7 @@ impl Queue {
             if let Some(value) = queue.pop_front() {
                 return value;
             }
-            self.cond.wait_for(&mut queue, Duration::from_millis(100));
+            self.cond.wait(&mut queue);
         }
     }
 }

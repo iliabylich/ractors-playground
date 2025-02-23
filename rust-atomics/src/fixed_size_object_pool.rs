@@ -1,20 +1,30 @@
-use parking_lot::{Condvar, Mutex};
 use std::{
     ffi::c_ulong,
-    time::{Duration, Instant},
+    sync::mpsc::{Receiver, Sender},
+    time::Duration,
 };
 
 pub struct FixedSizeObjectPool {
-    pool: Mutex<Vec<c_ulong>>,
-    cond: Condvar,
+    pool: Vec<c_ulong>,
+    tx: Sender<usize>,
+    rx: Receiver<usize>,
     timeout: Duration,
+}
+
+#[repr(C)]
+pub struct PooledItem {
+    pub idx: usize,
+    pub rbobj: c_ulong,
 }
 
 impl FixedSizeObjectPool {
     fn new() -> Self {
+        let (tx, rx) = std::sync::mpsc::channel();
+
         Self {
-            pool: Mutex::new(vec![]),
-            cond: Condvar::new(),
+            pool: vec![],
+            tx,
+            rx,
             timeout: Duration::MAX,
         }
     }
@@ -25,49 +35,31 @@ impl FixedSizeObjectPool {
         timeout_in_ms: u64,
         rb_make_obj: extern "C" fn(c_ulong) -> c_ulong,
     ) {
-        let mut pool = Vec::with_capacity(max_size);
-        for _ in 0..max_size {
-            pool.push((rb_make_obj)(0));
-        }
-        self.pool = Mutex::new(pool);
         self.timeout = Duration::from_millis(timeout_in_ms);
+
+        self.pool = Vec::with_capacity(max_size);
+        for idx in 0..max_size {
+            self.pool.push((rb_make_obj)(0));
+            self.tx.send(idx).unwrap();
+        }
     }
 
     fn mark(&self, f: extern "C" fn(c_ulong)) {
-        let pool = self.pool.lock();
-        for item in pool.iter() {
+        for item in self.pool.iter() {
             f(*item);
         }
     }
 
-    fn pop(&mut self) -> Option<c_ulong> {
-        let start = Instant::now();
-        let end = start + self.timeout;
-
-        // fast path
-        if let Some(mut pool) = self.pool.try_lock() {
-            if let Some(popped) = pool.pop() {
-                return Some(popped);
-            }
-        }
-
-        // slow path
-        loop {
-            let mut pool = self.pool.lock();
-            let timed_out = self.cond.wait_until(&mut pool, end).timed_out();
-            if timed_out {
-                return None;
-            }
-            if let Some(popped) = pool.pop() {
-                return Some(popped);
-            }
-        }
+    fn pop(&mut self) -> Option<PooledItem> {
+        let idx = self.rx.recv_timeout(self.timeout).ok()?;
+        Some(PooledItem {
+            idx,
+            rbobj: self.pool[idx],
+        })
     }
 
-    fn push(&mut self, value: c_ulong) {
-        let mut pool = self.pool.lock();
-        pool.push(value);
-        self.cond.notify_one();
+    fn push(&mut self, idx: usize) {
+        self.tx.send(idx).unwrap();
     }
 }
 
@@ -102,18 +94,15 @@ pub extern "C" fn fixed_size_object_pool_mark(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn fixed_size_object_pool_pop(
-    pool: *mut FixedSizeObjectPool,
-    fallback: c_ulong,
-) -> c_ulong {
+pub extern "C" fn fixed_size_object_pool_pop(pool: *mut FixedSizeObjectPool) -> PooledItem {
     let pool = unsafe { pool.as_mut().unwrap() };
-    pool.pop().unwrap_or(fallback)
+    pool.pop().unwrap_or(PooledItem { idx: 0, rbobj: 0 })
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn fixed_size_object_pool_push(pool: *mut FixedSizeObjectPool, value: c_ulong) {
+pub extern "C" fn fixed_size_object_pool_push(pool: *mut FixedSizeObjectPool, idx: usize) {
     let pool = unsafe { pool.as_mut().unwrap() };
-    pool.push(value);
+    pool.push(idx);
 }
 
 pub const FIXED_SIZE_OBJECT_POOL_SIZE: usize = 56;

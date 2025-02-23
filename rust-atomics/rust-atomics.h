@@ -26,6 +26,11 @@ typedef struct plain_counter_t plain_counter_t;
 
 typedef struct queue_t queue_t;
 
+typedef struct {
+  uintptr_t idx;
+  unsigned long rbobj;
+} PooledItem;
+
 void plain_counter_init(plain_counter_t *counter, uint64_t n);
 
 void plain_counter_increment(plain_counter_t *counter);
@@ -69,9 +74,9 @@ void fixed_size_object_pool_drop(fixed_size_object_pool_t *pool);
 
 void fixed_size_object_pool_mark(const fixed_size_object_pool_t *pool, void (*f)(unsigned long));
 
-unsigned long fixed_size_object_pool_pop(fixed_size_object_pool_t *pool, unsigned long fallback);
+PooledItem fixed_size_object_pool_pop(fixed_size_object_pool_t *pool);
 
-void fixed_size_object_pool_push(fixed_size_object_pool_t *pool, unsigned long value);
+void fixed_size_object_pool_push(fixed_size_object_pool_t *pool, uintptr_t idx);
 
 void queue_init(queue_t *queue);
 

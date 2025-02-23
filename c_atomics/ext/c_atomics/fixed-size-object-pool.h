@@ -44,14 +44,21 @@ VALUE rb_fixed_size_object_pool_pop(VALUE self) {
   fixed_size_object_pool_t *rust_obj;
   TypedData_Get_Struct(self, fixed_size_object_pool_t,
                        &fixed_size_object_pool_data, rust_obj);
-  return fixed_size_object_pool_pop(rust_obj, Qnil);
+  PooledItem pooled = fixed_size_object_pool_pop(rust_obj);
+  if (pooled.idx == 0 && pooled.rbobj == 0) {
+    return Qnil;
+  }
+  VALUE ary = rb_ary_new_capa(2);
+  rb_ary_push(ary, pooled.rbobj);
+  rb_ary_push(ary, LONG2FIX(pooled.idx));
+  return ary;
 }
 
-VALUE rb_fixed_size_object_pool_push(VALUE self, VALUE value) {
+VALUE rb_fixed_size_object_pool_push(VALUE self, VALUE idx) {
   fixed_size_object_pool_t *rust_obj;
   TypedData_Get_Struct(self, fixed_size_object_pool_t,
                        &fixed_size_object_pool_data, rust_obj);
-  fixed_size_object_pool_push(rust_obj, value);
+  fixed_size_object_pool_push(rust_obj, FIX2LONG(idx));
   return Qnil;
 }
 
