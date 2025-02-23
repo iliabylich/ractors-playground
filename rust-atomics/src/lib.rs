@@ -9,3 +9,6 @@ pub use hashmap::*;
 
 mod fixed_size_object_pool;
 pub use fixed_size_object_pool::*;
+
+mod queue;
+pub use queue::*;

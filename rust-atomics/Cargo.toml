@@ -9,6 +9,7 @@ crate-type = ["lib", "staticlib"]
 [dependencies]
 dashmap = "6.1.0"
 parking_lot = "0.12.3"
+lockfree = "0.5.1"
 
 [profile.release]
 panic = "abort"

@@ -1,6 +1,4 @@
 #include "ruby.h"
-#include "ruby/internal/anyargs.h"
-#include "ruby/internal/arithmetic/long.h"
 #include "rust-atomics.h"
 
 void rb_fixed_size_object_pool_mark(void *);
@@ -32,11 +30,13 @@ VALUE rb_fixed_size_object_pool_alloc(VALUE klass) {
   return obj;
 }
 
-VALUE rb_fixed_size_object_pool_initialize(VALUE self, VALUE size) {
+VALUE rb_fixed_size_object_pool_initialize(VALUE self, VALUE size,
+                                           VALUE timeout_in_ms) {
   fixed_size_object_pool_t *rust_obj;
   TypedData_Get_Struct(self, fixed_size_object_pool_t,
                        &fixed_size_object_pool_data, rust_obj);
-  fixed_size_object_pool_init(rust_obj, FIX2LONG(size), 1000, rb_yield);
+  fixed_size_object_pool_init(rust_obj, FIX2LONG(size), FIX2LONG(timeout_in_ms),
+                              rb_yield);
   return Qnil;
 }
 
@@ -61,7 +61,7 @@ static void init_fixed_size_object_pool(void) {
   rb_define_alloc_func(rb_cFixedSizeObjectPool,
                        rb_fixed_size_object_pool_alloc);
   rb_define_method(rb_cFixedSizeObjectPool, "initialize",
-                   rb_fixed_size_object_pool_initialize, 1);
+                   rb_fixed_size_object_pool_initialize, 2);
   rb_define_method(rb_cFixedSizeObjectPool, "pop",
                    rb_fixed_size_object_pool_pop, 0);
   rb_define_method(rb_cFixedSizeObjectPool, "push",

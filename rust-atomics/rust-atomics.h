@@ -12,7 +12,9 @@
 
 #define CONCURRENT_HASH_MAP_SIZE 40
 
-#define FIXED_SIZE_OBJECT_POOL_SIZE 48
+#define FIXED_SIZE_OBJECT_POOL_SIZE 56
+
+#define QUEUE_SIZE 40
 
 typedef struct atomic_counter_t atomic_counter_t;
 
@@ -21,6 +23,8 @@ typedef struct concurrent_hash_map_t concurrent_hash_map_t;
 typedef struct fixed_size_object_pool_t fixed_size_object_pool_t;
 
 typedef struct plain_counter_t plain_counter_t;
+
+typedef struct queue_t queue_t;
 
 void plain_counter_init(plain_counter_t *counter, uint64_t n);
 
@@ -68,5 +72,15 @@ void fixed_size_object_pool_mark(const fixed_size_object_pool_t *pool, void (*f)
 unsigned long fixed_size_object_pool_pop(fixed_size_object_pool_t *pool, unsigned long fallback);
 
 void fixed_size_object_pool_push(fixed_size_object_pool_t *pool, unsigned long value);
+
+void queue_init(queue_t *queue);
+
+void queue_drop(queue_t *queue);
+
+void queue_mark(const queue_t *queue, void (*f)(unsigned long));
+
+unsigned long queue_pop(queue_t *queue);
+
+void queue_push(queue_t *queue, unsigned long value);
 
 #endif  /* RUST_ATOMICS_H */

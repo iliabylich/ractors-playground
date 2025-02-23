@@ -1,20 +1,20 @@
-use parking_lot::Mutex;
+use parking_lot::{Condvar, Mutex};
 use std::{
     ffi::c_ulong,
     time::{Duration, Instant},
 };
 
 pub struct FixedSizeObjectPool {
-    mutex: Mutex<()>,
-    pool: Vec<c_ulong>,
+    pool: Mutex<Vec<c_ulong>>,
+    cond: Condvar,
     timeout: Duration,
 }
 
 impl FixedSizeObjectPool {
     fn new() -> Self {
         Self {
-            mutex: Mutex::new(()),
-            pool: vec![],
+            pool: Mutex::new(vec![]),
+            cond: Condvar::new(),
             timeout: Duration::MAX,
         }
     }
@@ -25,16 +25,17 @@ impl FixedSizeObjectPool {
         timeout_in_ms: u64,
         rb_make_obj: extern "C" fn(c_ulong) -> c_ulong,
     ) {
-        self.pool.clear();
-        self.pool.reserve(max_size);
+        let mut pool = Vec::with_capacity(max_size);
         for _ in 0..max_size {
-            self.pool.push((rb_make_obj)(0));
+            pool.push((rb_make_obj)(0));
         }
+        self.pool = Mutex::new(pool);
         self.timeout = Duration::from_millis(timeout_in_ms);
     }
 
     fn mark(&self, f: extern "C" fn(c_ulong)) {
-        for item in self.pool.iter() {
+        let pool = self.pool.lock();
+        for item in pool.iter() {
             f(*item);
         }
     }
@@ -44,29 +45,29 @@ impl FixedSizeObjectPool {
         let end = start + self.timeout;
 
         // fast path
-        if let Some(_guard) = self.mutex.try_lock() {
-            if let Some(popped) = self.pool.pop() {
+        if let Some(mut pool) = self.pool.try_lock() {
+            if let Some(popped) = pool.pop() {
                 return Some(popped);
             }
         }
 
         // slow path
-        while Instant::now() < end {
-            if let Some(_guard) = self.mutex.try_lock_until(end) {
-                if let Some(popped) = self.pool.pop() {
-                    return Some(popped);
-                }
+        loop {
+            let mut pool = self.pool.lock();
+            let timed_out = self.cond.wait_until(&mut pool, end).timed_out();
+            if timed_out {
+                return None;
             }
-            std::hint::spin_loop();
+            if let Some(popped) = pool.pop() {
+                return Some(popped);
+            }
         }
-
-        // failed both ways
-        None
     }
 
     fn push(&mut self, value: c_ulong) {
-        let _guard = self.mutex.lock();
-        self.pool.push(value);
+        let mut pool = self.pool.lock();
+        pool.push(value);
+        self.cond.notify_one();
     }
 }
 
@@ -115,7 +116,7 @@ pub extern "C" fn fixed_size_object_pool_push(pool: *mut FixedSizeObjectPool, va
     pool.push(value);
 }
 
-pub const FIXED_SIZE_OBJECT_POOL_SIZE: usize = 48;
+pub const FIXED_SIZE_OBJECT_POOL_SIZE: usize = 56;
 
 #[test]
 fn test_concurrent_hash_map() {

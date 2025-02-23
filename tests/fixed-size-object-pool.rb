@@ -6,28 +6,25 @@ class FixedSizeObjectPool
     raise 'timeout error' if obj.nil?
     yield obj
   ensure
-    push(obj) unless obj.nil?
-  end
-end
-
-objects = [1, 2, 3]
-
-pool = FixedSizeObjectPool.new(3) { objects.shift }
-
-pool.with do |obj1|
-  p obj1
-  pool.with do |obj2|
-    p obj2
-    pool.with do |obj3|
-      p obj3
-
-      begin
-        pool.with { |obj4| p obj 4 }
-      rescue => err
-        p err
-      end
+    unless obj.nil?
+      $stderr.puts "Returning #{obj}"
+      push(obj)
     end
   end
 end
 
-pool.with { |o| p o }
+POOL_SIZE = 3
+POOL = FixedSizeObjectPool.new(POOL_SIZE, 3_000) { [] }
+
+ractors = 1.upto(CPU_COUNT).map do |i|
+  Ractor.new(i) do |i|
+    POOL.with do |v|
+      v.push(i)
+    end
+
+    Ractor.yield :done
+  end
+end
+
+p ractors.map(&:take)
+p POOL_SIZE.times.map { POOL.pop }
