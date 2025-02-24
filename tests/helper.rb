@@ -13,7 +13,7 @@ end
 # trigger warnings early to not pollute benchmark's output
 disable_stderr { Ractor.new {} }
 
-CPU_COUNT = 6
+CPU_COUNT = `cat /proc/cpuinfo | grep processor | wc -l`.to_i
 puts "CPU count: #{CPU_COUNT}"
 
 def assert_eq(lhs, rhs, message)
