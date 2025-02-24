@@ -3,6 +3,10 @@ require 'bundler/setup'
 require 'c_atomics'
 require 'stringio'
 
+if ENV['GC_STRESS']
+  GC.stress = true
+end
+
 def disable_stderr
   stderr, $stderr = $stderr, StringIO.new
   yield

@@ -1,9 +1,8 @@
-use concurrent_queue::ConcurrentQueue;
 use parking_lot::{Condvar, Mutex};
 use std::ffi::c_ulong;
 
 pub struct Queue {
-    queue: ConcurrentQueue<c_ulong>,
+    queue: scc::Queue<c_ulong>,
     mutex: Mutex<()>,
     cond: Condvar,
 }
@@ -11,33 +10,34 @@ pub struct Queue {
 impl Queue {
     fn new() -> Self {
         Self {
-            queue: ConcurrentQueue::unbounded(),
+            queue: scc::Queue::default(),
             mutex: Mutex::new(()),
             cond: Condvar::new(),
         }
     }
 
     fn mark(&self, f: extern "C" fn(c_ulong)) {
-        for item in self.queue.try_iter() {
-            f(item);
+        let guard = scc::ebr::Guard::new();
+        for item in self.queue.iter(&guard) {
+            f(*item);
         }
     }
 
     fn push(&self, value: c_ulong) {
-        self.queue.push(value).unwrap();
+        self.queue.push(value);
         self.cond.notify_one();
     }
 
     fn pop(&self) -> c_ulong {
-        if let Ok(value) = self.queue.pop() {
-            return value;
+        if let Some(value) = self.queue.pop() {
+            return **value;
         }
 
         loop {
             let mut guard = self.mutex.lock();
             self.cond.wait(&mut guard);
-            if let Ok(value) = self.queue.pop() {
-                return value;
+            if let Some(value) = self.queue.pop() {
+                return **value;
             }
         }
     }

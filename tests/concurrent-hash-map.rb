@@ -1,6 +1,6 @@
 require_relative './helper'
 
-ITER_COUNT = 100_000
+ITER_COUNT = 10
 puts "Iterations: #{ITER_COUNT}"
 
 Key = Struct.new(:text)

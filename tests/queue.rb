@@ -10,7 +10,9 @@ producers = 1.upto(CPU_COUNT).map do |i|
   end
 end
 
-producers << Ractor.new { sleep 2; QUEUE.push(nil); Ractor.yield :done }
+p producers.map(&:take)
+
+p Ractor.new { QUEUE.push(nil); Ractor.yield :done }.take
 
 consumer = Ractor.new do
   while i = QUEUE.pop do
@@ -19,4 +21,4 @@ consumer = Ractor.new do
   Ractor.yield :done
 end
 
-p [*producers, consumer].map(&:take)
+p consumer.take
