@@ -1,8 +1,5 @@
-use std::{
-    ffi::c_ulong,
-    sync::mpsc::{Receiver, Sender},
-    time::Duration,
-};
+use crossbeam_channel::{Receiver, Sender};
+use std::{ffi::c_ulong, time::Duration};
 
 pub struct FixedSizeObjectPool {
     pool: Vec<c_ulong>,
@@ -19,7 +16,7 @@ pub struct PooledItem {
 
 impl FixedSizeObjectPool {
     fn new() -> Self {
-        let (tx, rx) = std::sync::mpsc::channel();
+        let (tx, rx) = crossbeam_channel::unbounded();
 
         Self {
             pool: vec![],
@@ -105,7 +102,7 @@ pub extern "C" fn fixed_size_object_pool_push(pool: *mut FixedSizeObjectPool, id
     pool.push(idx);
 }
 
-pub const FIXED_SIZE_OBJECT_POOL_SIZE: usize = 56;
+pub const FIXED_SIZE_OBJECT_POOL_SIZE: usize = 72;
 
 #[test]
 fn test_concurrent_hash_map() {
@@ -114,4 +111,5 @@ fn test_concurrent_hash_map() {
         std::mem::size_of::<FixedSizeObjectPool>(),
         "size mismatch"
     );
+    assert!(crate::is_sync_and_send::<FixedSizeObjectPool>());
 }

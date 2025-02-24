@@ -12,9 +12,9 @@
 
 #define CONCURRENT_HASH_MAP_SIZE 40
 
-#define FIXED_SIZE_OBJECT_POOL_SIZE 56
+#define FIXED_SIZE_OBJECT_POOL_SIZE 72
 
-#define QUEUE_SIZE 40
+#define QUEUE_SIZE 640
 
 typedef struct atomic_counter_t atomic_counter_t;
 

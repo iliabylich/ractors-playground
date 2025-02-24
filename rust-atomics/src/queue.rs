@@ -1,38 +1,44 @@
+use concurrent_queue::ConcurrentQueue;
 use parking_lot::{Condvar, Mutex};
-use std::{collections::VecDeque, ffi::c_ulong};
+use std::ffi::c_ulong;
 
 pub struct Queue {
-    queue: Mutex<VecDeque<c_ulong>>,
+    queue: ConcurrentQueue<c_ulong>,
+    mutex: Mutex<()>,
     cond: Condvar,
 }
 
 impl Queue {
     fn new() -> Self {
         Self {
-            queue: Mutex::new(VecDeque::new()),
+            queue: ConcurrentQueue::unbounded(),
+            mutex: Mutex::new(()),
             cond: Condvar::new(),
         }
     }
 
     fn mark(&self, f: extern "C" fn(c_ulong)) {
-        for item in self.queue.lock().iter() {
-            f(*item);
+        for item in self.queue.try_iter() {
+            f(item);
         }
     }
 
     fn push(&self, value: c_ulong) {
-        let mut queue = self.queue.lock();
-        queue.push_back(value);
+        self.queue.push(value).unwrap();
         self.cond.notify_one();
     }
 
     fn pop(&self) -> c_ulong {
+        if let Ok(value) = self.queue.pop() {
+            return value;
+        }
+
         loop {
-            let mut queue = self.queue.lock();
-            if let Some(value) = queue.pop_front() {
+            let mut guard = self.mutex.lock();
+            self.cond.wait(&mut guard);
+            if let Ok(value) = self.queue.pop() {
                 return value;
             }
-            self.cond.wait(&mut queue);
         }
     }
 }
@@ -65,9 +71,10 @@ pub extern "C" fn queue_push(queue: *mut Queue, value: c_ulong) {
     queue.push(value);
 }
 
-pub const QUEUE_SIZE: usize = 40;
+pub const QUEUE_SIZE: usize = 640;
 
 #[test]
-fn test_concurrent_hash_map() {
+fn test_queue() {
     assert_eq!(QUEUE_SIZE, std::mem::size_of::<Queue>(), "size mismatch");
+    assert!(crate::is_sync_and_send::<Queue>());
 }

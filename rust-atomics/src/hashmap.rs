@@ -99,4 +99,6 @@ fn test_concurrent_hash_map() {
         std::mem::size_of::<ConcurrentHashMap>(),
         "size mismatch"
     );
+
+    assert!(crate::is_sync_and_send::<ConcurrentHashMap>());
 }

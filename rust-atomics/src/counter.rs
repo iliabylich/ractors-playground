@@ -43,4 +43,5 @@ pub const ATOMIC_COUNTER_SIZE: usize = 8;
 #[test]
 fn test_atomic_counter() {
     assert_eq!(ATOMIC_COUNTER_SIZE, std::mem::size_of::<AtomicCounter>());
+    assert!(crate::is_sync_and_send::<AtomicCounter>());
 }
