@@ -78,7 +78,9 @@ PooledItem fixed_size_object_pool_pop(fixed_size_object_pool_t *pool);
 
 void fixed_size_object_pool_push(fixed_size_object_pool_t *pool, uintptr_t idx);
 
-void queue_init(queue_t *queue);
+void queue_alloc(queue_t *queue);
+
+void queue_init(queue_t *queue, uintptr_t cap);
 
 void queue_drop(queue_t *queue);
 

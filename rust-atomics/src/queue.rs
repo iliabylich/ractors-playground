@@ -7,9 +7,13 @@ pub struct Queue {
 }
 
 impl Queue {
-    fn new() -> Self {
+    fn alloc() -> Self {
         let (tx, rx) = crossbeam_channel::bounded(10);
         Self { tx, rx }
+    }
+
+    fn init(&mut self, cap: usize) {
+        (self.tx, self.rx) = crossbeam_channel::bounded(cap);
     }
 
     fn mark(&self, f: extern "C" fn(c_ulong)) {
@@ -30,8 +34,14 @@ impl Queue {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn queue_init(queue: *mut Queue) {
-    unsafe { queue.write(Queue::new()) }
+pub extern "C" fn queue_alloc(queue: *mut Queue) {
+    unsafe { queue.write(Queue::alloc()) }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn queue_init(queue: *mut Queue, cap: usize) {
+    let queue = unsafe { queue.as_mut().unwrap() };
+    queue.init(cap);
 }
 
 #[unsafe(no_mangle)]

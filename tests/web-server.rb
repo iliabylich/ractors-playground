@@ -2,10 +2,17 @@ require_relative './helper.rb'
 require 'socket'
 require 'webrick'
 
-QUEUE = CAtomics::SyncQueue.new
+QUEUE = CAtomics::SyncQueue.new(CPU_COUNT)
+GC.disable
+
+def log(s)
+  $stderr.puts "[#{Ractor.current[:request_id]}][#{Ractor.current.name}] #{s}"
+end
 
 def read_body(conn)
   body = ""
+  buf = String.new(capacity: 1024)
+  started_at = now
   loop do
     buf = conn.read_nonblock(1024)
     body += buf
@@ -13,8 +20,15 @@ def read_body(conn)
       break
     end
   rescue IO::EAGAINWaitReadable
-    # no more data, any attempt to read would block
+    if now > started_at + 1
+      raise 'timeout error'
+    end
+    conn.wait_readable(1)
+  rescue EOFError
     break
+  end
+  if body.empty?
+    raise "no data received"
   end
   body
 end
@@ -48,10 +62,11 @@ def process_request(conn)
   body = read_body(conn)
   http_method, path, protocol, headers, body = parse_body(body)
 
-  # puts "[#{Ractor.current.name}] #{http_method} #{path}"
+  log "#{http_method} #{path}"
 
   case [http_method, path]
   when ["GET", "/"]
+    heavy_computation(100)
     reply(conn, 200, {}, "Root page")
   when ["GET", "/hello"]
     reply(conn, 200, {}, "world")
@@ -59,8 +74,7 @@ def process_request(conn)
     reply(conn, 404, {}, "Unknown path #{path}")
   end
 rescue Exception => e
-  puts e.message
-  puts e.backtrace
+  log e.class.name + " " + e.message + " " + e.backtrace.join("\n    ")
 
   reply(conn, 500, {}, "Internal server error")
 ensure
@@ -71,17 +85,24 @@ workers = 1.upto(CPU_COUNT).map do |i|
   puts "Starting worker-#{i}..."
 
   Ractor.new(name: "worker-#{i}") do
-    while (conn = QUEUE.pop) do
-      # puts "[#{Ractor.current.name}] processing request..."
+    while (req = QUEUE.pop) do
+      req_id, conn = req
+      Ractor.current[:request_id] = req_id
       process_request(conn)
     end
   end
 end
 
 puts "Starting server..."
+req_id = 1
 Socket.tcp_server_loop(8080) do |conn, addr|
   # puts "Got connection, forwarding to a worker..."
 
-  QUEUE.push(conn)
-  # process_request(conn)
+  if ENV['SEQ']
+    Ractor.current[:request_id] = req_id
+    process_request(conn)
+  else
+    QUEUE.push([req_id, conn])
+  end
+  req_id += 1
 end

@@ -89,7 +89,7 @@ class TestClassTwo < TestCase
   end
 end
 
-QUEUE = CAtomics::SyncQueue.new
+QUEUE = CAtomics::SyncQueue.new(CPU_COUNT)
 
 workers = 1.upto(CPU_COUNT).map do |i|
   Ractor.new(name: "worker-#{i}") do
