@@ -1,45 +1,31 @@
-use parking_lot::{Condvar, Mutex};
-use std::ffi::c_ulong;
+use crossbeam_channel::{Receiver, Sender};
+use std::{ffi::c_ulong, time::Duration};
 
 pub struct Queue {
-    queue: scc::Queue<c_ulong>,
-    mutex: Mutex<()>,
-    cond: Condvar,
+    tx: Sender<c_ulong>,
+    rx: Receiver<c_ulong>,
 }
 
 impl Queue {
     fn new() -> Self {
-        Self {
-            queue: scc::Queue::default(),
-            mutex: Mutex::new(()),
-            cond: Condvar::new(),
-        }
+        let (tx, rx) = crossbeam_channel::bounded(10);
+        Self { tx, rx }
     }
 
     fn mark(&self, f: extern "C" fn(c_ulong)) {
-        let guard = scc::ebr::Guard::new();
-        for item in self.queue.iter(&guard) {
-            f(*item);
+        for item in self.rx.try_iter() {
+            f(item);
         }
     }
 
-    fn push(&self, value: c_ulong) {
-        self.queue.push(value);
-        self.cond.notify_one();
+    fn push(&self, value: c_ulong) -> bool {
+        self.tx
+            .send_timeout(value, Duration::from_millis(100))
+            .is_ok()
     }
 
-    fn pop(&self) -> c_ulong {
-        if let Some(value) = self.queue.pop() {
-            return **value;
-        }
-
-        loop {
-            let mut guard = self.mutex.lock();
-            self.cond.wait(&mut guard);
-            if let Some(value) = self.queue.pop() {
-                return **value;
-            }
-        }
+    fn try_pop(&self) -> Option<c_ulong> {
+        self.rx.recv_timeout(Duration::from_millis(100)).ok()
     }
 }
 
@@ -60,18 +46,18 @@ pub extern "C" fn queue_mark(queue: *const Queue, f: extern "C" fn(c_ulong)) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn queue_pop(queue: *mut Queue) -> c_ulong {
+pub extern "C" fn queue_try_pop(queue: *mut Queue, fallback: c_ulong) -> c_ulong {
     let queue = unsafe { queue.as_mut().unwrap() };
-    queue.pop()
+    queue.try_pop().unwrap_or(fallback)
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn queue_push(queue: *mut Queue, value: c_ulong) {
+pub extern "C" fn queue_try_push(queue: *mut Queue, value: c_ulong) -> bool {
     let queue = unsafe { queue.as_mut().unwrap() };
-    queue.push(value);
+    queue.push(value)
 }
 
-pub const QUEUE_SIZE: usize = 640;
+pub const QUEUE_SIZE: usize = 32;
 
 #[test]
 fn test_queue() {

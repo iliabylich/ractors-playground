@@ -1,4 +1,5 @@
 #include "ruby.h"
+#include "ruby/internal/module.h"
 #include "rust-atomics.h"
 
 const rb_data_type_t plain_counter_data = {
@@ -28,8 +29,9 @@ VALUE rb_plain_counter_read(VALUE self) {
   return LONG2FIX(plain_counter_read(rust_obj));
 }
 
-static void init_plain_counter(void) {
-  VALUE rb_cPlainCounter = rb_define_class("PlainCounter", rb_cObject);
+static void init_plain_counter(VALUE rb_mCAtomics) {
+  VALUE rb_cPlainCounter =
+      rb_define_class_under(rb_mCAtomics, "PlainCounter", rb_cObject);
   rb_define_alloc_func(rb_cPlainCounter, rb_plain_counter_alloc);
   rb_define_method(rb_cPlainCounter, "increment", rb_plain_counter_increment,
                    0);

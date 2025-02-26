@@ -1,4 +1,5 @@
 #include "ruby.h"
+#include "ruby/internal/module.h"
 #include "rust-atomics.h"
 
 void rb_concurrent_hash_map_mark(void *);
@@ -62,9 +63,9 @@ VALUE rb_concurrent_hash_map_fetch_and_modify(VALUE self, VALUE key) {
   return Qnil;
 }
 
-static void init_hashmap(void) {
+static void init_hashmap(VALUE rb_mCAtomics) {
   VALUE rb_cConcurrentHashMap =
-      rb_define_class("ConcurrentHashMap", rb_cObject);
+      rb_define_class_under(rb_mCAtomics, "ConcurrentHashMap", rb_cObject);
   rb_define_alloc_func(rb_cConcurrentHashMap, rb_concurrent_hash_map_alloc);
   rb_define_method(rb_cConcurrentHashMap, "get", rb_concurrent_hash_map_get, 1);
   rb_define_method(rb_cConcurrentHashMap, "set", rb_concurrent_hash_map_set, 2);

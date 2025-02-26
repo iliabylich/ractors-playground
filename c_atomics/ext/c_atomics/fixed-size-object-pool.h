@@ -1,4 +1,5 @@
 #include "ruby.h"
+#include "ruby/internal/module.h"
 #include "rust-atomics.h"
 
 void rb_fixed_size_object_pool_mark(void *);
@@ -62,9 +63,9 @@ VALUE rb_fixed_size_object_pool_push(VALUE self, VALUE idx) {
   return Qnil;
 }
 
-static void init_fixed_size_object_pool(void) {
+static void init_fixed_size_object_pool(VALUE rb_mCAtomics) {
   VALUE rb_cFixedSizeObjectPool =
-      rb_define_class("FixedSizeObjectPool", rb_cObject);
+      rb_define_class_under(rb_mCAtomics, "FixedSizeObjectPool", rb_cObject);
   rb_define_alloc_func(rb_cFixedSizeObjectPool,
                        rb_fixed_size_object_pool_alloc);
   rb_define_method(rb_cFixedSizeObjectPool, "initialize",

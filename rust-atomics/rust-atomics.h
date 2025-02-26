@@ -14,7 +14,7 @@
 
 #define FIXED_SIZE_OBJECT_POOL_SIZE 72
 
-#define QUEUE_SIZE 640
+#define QUEUE_SIZE 32
 
 typedef struct atomic_counter_t atomic_counter_t;
 
@@ -84,8 +84,8 @@ void queue_drop(queue_t *queue);
 
 void queue_mark(const queue_t *queue, void (*f)(unsigned long));
 
-unsigned long queue_pop(queue_t *queue);
+unsigned long queue_try_pop(queue_t *queue, unsigned long fallback);
 
-void queue_push(queue_t *queue, unsigned long value);
+bool queue_try_push(queue_t *queue, unsigned long value);
 
 #endif  /* RUST_ATOMICS_H */

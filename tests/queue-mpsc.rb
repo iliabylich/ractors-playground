@@ -1,6 +1,8 @@
+# Multiple producers, single consumer
+
 require_relative './helper'
 
-QUEUE = SyncQueue.new
+QUEUE = CAtomics::SyncQueue.new
 
 producers = 1.upto(CPU_COUNT).map do |i|
   Ractor.new(i) do |i|
@@ -10,15 +12,14 @@ producers = 1.upto(CPU_COUNT).map do |i|
   end
 end
 
-p producers.map(&:take)
-
-p Ractor.new { QUEUE.push(nil); Ractor.yield :done }.take
-
 consumer = Ractor.new do
+  p "Starting consumer"
   while i = QUEUE.pop do
     puts i
   end
   Ractor.yield :done
 end
 
+p producers.map(&:take)
+QUEUE.push(nil)
 p consumer.take

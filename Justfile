@@ -4,3 +4,13 @@ build-atomics:
 
 build-compile-commands-json:
     ruby build-compile-commands-json.rb
+
+test:
+    @just build-atomics
+    ruby tests/shared-memory.rb
+    ruby tests/require-test.rb
+    ruby tests/plain-counter.rb ractors
+    ruby tests/atomic-counter.rb ractors
+    ruby tests/concurrent-hash-map.rb ractors
+    ruby tests/fixed-size-object-pool.rb ractors
+    ruby tests/test-framework.rb

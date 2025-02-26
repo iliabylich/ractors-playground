@@ -1,7 +1,5 @@
 require_relative './helper'
 
-def now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
 class TestCase
   def assert_eq(lhs, rhs, message = 'assertion failed')
     if lhs != rhs
@@ -77,7 +75,7 @@ class TestClassOne < TestCase
   1.upto(20) do |i|
     class_eval <<~RUBY
       def test_#{i}
-        # heavy_computation(rand(1000) + 2000)
+        heavy_computation(rand(1000) + 1000)
         assert_eq(1, 1)
       end
     RUBY
@@ -86,20 +84,12 @@ end
 
 class TestClassTwo < TestCase
   def test_that_fails
-    # heavy_computation(rand(1000) + 2000)
+    heavy_computation(rand(1000) + 1000)
     assert_eq 1, 2
   end
 end
 
-def heavy_computation(ms)
-  finish_at = now + ms / 1000.0
-  counter = 0
-  while now < finish_at
-    1000.times { counter += 1 }
-  end
-end
-
-QUEUE = SyncQueue.new
+QUEUE = CAtomics::SyncQueue.new
 
 workers = 1.upto(CPU_COUNT).map do |i|
   Ractor.new(name: "worker-#{i}") do

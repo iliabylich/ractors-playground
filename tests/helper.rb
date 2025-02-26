@@ -24,6 +24,10 @@ def assert_eq(lhs, rhs, message)
   raise "#{message}: #{lhs} != #{rhs}" if lhs != rhs
 end
 
+def assert_ne(lhs, rhs, message)
+  raise "#{message}: #{lhs} == #{rhs}" if lhs == rhs
+end
+
 def do_benchmark
   Benchmark.bmbm do |x|
     x.report("#{CPU_COUNT}x seq") { do_seq }
@@ -44,5 +48,15 @@ def process_args
         mode: seq / ractors / benchmark
     USAGE
     exit 1
+  end
+end
+
+def now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+def heavy_computation(ms)
+  finish_at = now + ms / 1000.0
+  counter = 0
+  while now < finish_at
+    1000.times { counter += 1 }
   end
 end

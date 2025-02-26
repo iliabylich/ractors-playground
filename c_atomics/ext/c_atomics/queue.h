@@ -28,22 +28,22 @@ VALUE rb_queue_alloc(VALUE klass) {
   return obj;
 }
 
-VALUE rb_queue_push(VALUE self, VALUE value) {
+VALUE rb_queue_try_push(VALUE self, VALUE value) {
   queue_t *rust_obj;
   TypedData_Get_Struct(self, queue_t, &queue_data, rust_obj);
-  queue_push(rust_obj, value);
-  return Qnil;
+  return queue_try_push(rust_obj, value) ? Qtrue : Qfalse;
 }
 
-VALUE rb_queue_pop(VALUE self) {
+VALUE rb_queue_try_pop(VALUE self, VALUE fallback) {
   queue_t *rust_obj;
   TypedData_Get_Struct(self, queue_t, &queue_data, rust_obj);
-  return queue_pop(rust_obj);
+  return queue_try_pop(rust_obj, fallback);
 }
 
-static void init_queue(void) {
-  VALUE rb_cQueue = rb_define_class("SyncQueue", rb_cObject);
+static void init_queue(VALUE rb_mCAtomics) {
+  VALUE rb_cQueue =
+      rb_define_class_under(rb_mCAtomics, "SyncQueue", rb_cObject);
   rb_define_alloc_func(rb_cQueue, rb_queue_alloc);
-  rb_define_method(rb_cQueue, "push", rb_queue_push, 1);
-  rb_define_method(rb_cQueue, "pop", rb_queue_pop, 0);
+  rb_define_method(rb_cQueue, "try_push", rb_queue_try_push, 1);
+  rb_define_method(rb_cQueue, "try_pop", rb_queue_try_pop, 1);
 }
