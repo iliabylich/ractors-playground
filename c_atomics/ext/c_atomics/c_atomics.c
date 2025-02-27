@@ -3,9 +3,8 @@
 #include "hashmap.h"
 #include "plain-counter.h"
 #include "queue.h"
+#include "slow-object.h"
 #include <ruby.h>
-
-//
 
 RUBY_FUNC_EXPORTED void Init_c_atomics(void) {
   rb_ext_ractor_safe(true);
@@ -17,4 +16,5 @@ RUBY_FUNC_EXPORTED void Init_c_atomics(void) {
   init_hashmap(rb_mCAtomics);
   init_fixed_size_object_pool(rb_mCAtomics);
   init_queue(rb_mCAtomics);
+  init_slow_object(rb_mCAtomics);
 }

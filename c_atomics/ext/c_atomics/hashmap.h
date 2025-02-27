@@ -1,5 +1,4 @@
 #include "ruby.h"
-#include "ruby/internal/module.h"
 #include "rust-atomics.h"
 
 void rb_concurrent_hash_map_mark(void *);
@@ -21,45 +20,45 @@ void rb_concurrent_hash_map_mark(void *ptr) {
 }
 
 VALUE rb_concurrent_hash_map_alloc(VALUE klass) {
-  concurrent_hash_map_t *rust_obj;
+  concurrent_hash_map_t *hashmap;
   TypedData_Make_Struct0(obj, klass, concurrent_hash_map_t,
                          CONCURRENT_HASH_MAP_SIZE, &concurrent_hash_map_data,
-                         rust_obj);
-  concurrent_hash_map_init(rust_obj);
+                         hashmap);
+  concurrent_hash_map_init(hashmap);
   VALUE rb_cRactor = rb_const_get(rb_cObject, rb_intern("Ractor"));
   rb_funcall(rb_cRactor, rb_intern("make_shareable"), 1, obj);
   return obj;
 }
 
 VALUE rb_concurrent_hash_map_get(VALUE self, VALUE key) {
-  concurrent_hash_map_t *rust_obj;
+  concurrent_hash_map_t *hashmap;
   TypedData_Get_Struct(self, concurrent_hash_map_t, &concurrent_hash_map_data,
-                       rust_obj);
-  return concurrent_hash_map_get(rust_obj, key, Qnil);
+                       hashmap);
+  return concurrent_hash_map_get(hashmap, key, Qnil);
 }
 
 VALUE rb_concurrent_hash_map_set(VALUE self, VALUE key, VALUE value) {
-  concurrent_hash_map_t *rust_obj;
+  concurrent_hash_map_t *hashmap;
   TypedData_Get_Struct(self, concurrent_hash_map_t, &concurrent_hash_map_data,
-                       rust_obj);
-  concurrent_hash_map_set(rust_obj, key, value);
+                       hashmap);
+  concurrent_hash_map_set(hashmap, key, value);
   return Qnil;
 }
 
 VALUE rb_concurrent_hash_map_clear(VALUE self) {
-  concurrent_hash_map_t *rust_obj;
+  concurrent_hash_map_t *hashmap;
   TypedData_Get_Struct(self, concurrent_hash_map_t, &concurrent_hash_map_data,
-                       rust_obj);
-  concurrent_hash_map_clear(rust_obj);
+                       hashmap);
+  concurrent_hash_map_clear(hashmap);
   return Qnil;
 }
 
 VALUE rb_concurrent_hash_map_fetch_and_modify(VALUE self, VALUE key) {
   rb_need_block();
-  concurrent_hash_map_t *rust_obj;
+  concurrent_hash_map_t *hashmap;
   TypedData_Get_Struct(self, concurrent_hash_map_t, &concurrent_hash_map_data,
-                       rust_obj);
-  concurrent_hash_map_fetch_and_modify(rust_obj, key, rb_yield);
+                       hashmap);
+  concurrent_hash_map_fetch_and_modify(hashmap, key, rb_yield);
   return Qnil;
 }
 

@@ -16,6 +16,8 @@
 
 #define QUEUE_SIZE 32
 
+#define SLOW_OBJECT_SIZE 8
+
 typedef struct atomic_counter_t atomic_counter_t;
 
 typedef struct concurrent_hash_map_t concurrent_hash_map_t;
@@ -25,6 +27,8 @@ typedef struct fixed_size_object_pool_t fixed_size_object_pool_t;
 typedef struct plain_counter_t plain_counter_t;
 
 typedef struct queue_t queue_t;
+
+typedef struct slow_object_t slow_object_t;
 
 typedef struct {
   uintptr_t idx;
@@ -89,5 +93,15 @@ void queue_mark(const queue_t *queue, void (*f)(unsigned long));
 unsigned long queue_try_pop(queue_t *queue, unsigned long fallback);
 
 bool queue_try_push(queue_t *queue, unsigned long value);
+
+void slow_object_alloc(slow_object_t *slow);
+
+void slow_object_init(slow_object_t *slow, uint64_t n);
+
+void slow_object_drop(slow_object_t *slow);
+
+void slow_object_mark(const slow_object_t *slow, void (*f)(unsigned long));
+
+void slow_object_slow_op(const slow_object_t *slow);
 
 #endif  /* RUST_ATOMICS_H */

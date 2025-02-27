@@ -1,5 +1,4 @@
 #include "ruby.h"
-#include "ruby/internal/module.h"
 #include "rust-atomics.h"
 
 const rb_data_type_t atomic_counter_data = {
@@ -7,26 +6,26 @@ const rb_data_type_t atomic_counter_data = {
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE};
 
 VALUE rb_atomic_counter_alloc(VALUE klass) {
-  atomic_counter_t *rust_obj;
+  atomic_counter_t *counter;
   TypedData_Make_Struct0(obj, klass, atomic_counter_t, ATOMIC_COUNTER_SIZE,
-                         &atomic_counter_data, rust_obj);
-  atomic_counter_init(rust_obj, 0);
+                         &atomic_counter_data, counter);
+  atomic_counter_init(counter, 0);
   VALUE rb_cRactor = rb_const_get(rb_cObject, rb_intern("Ractor"));
   rb_funcall(rb_cRactor, rb_intern("make_shareable"), 1, obj);
   return obj;
 }
 
 VALUE rb_atomic_counter_increment(VALUE self) {
-  atomic_counter_t *rust_obj;
-  TypedData_Get_Struct(self, atomic_counter_t, &atomic_counter_data, rust_obj);
-  atomic_counter_increment(rust_obj);
+  atomic_counter_t *counter;
+  TypedData_Get_Struct(self, atomic_counter_t, &atomic_counter_data, counter);
+  atomic_counter_increment(counter);
   return Qnil;
 }
 
 VALUE rb_atomic_counter_read(VALUE self) {
-  atomic_counter_t *rust_obj;
-  TypedData_Get_Struct(self, atomic_counter_t, &atomic_counter_data, rust_obj);
-  return LONG2FIX(atomic_counter_read(rust_obj));
+  atomic_counter_t *counter;
+  TypedData_Get_Struct(self, atomic_counter_t, &atomic_counter_data, counter);
+  return LONG2FIX(atomic_counter_read(counter));
 }
 
 static void init_counter(VALUE rb_mCAtomics) {
