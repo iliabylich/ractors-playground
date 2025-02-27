@@ -3,7 +3,6 @@ require 'socket'
 require 'webrick'
 
 QUEUE = CAtomics::SyncQueue.new(CPU_COUNT)
-GC.disable
 
 def log(s)
   $stderr.puts "[#{Ractor.current[:request_id]}][#{Ractor.current.name}] #{s}"
@@ -23,7 +22,7 @@ def read_body(conn)
     if now > started_at + 1
       raise 'timeout error'
     end
-    conn.wait_readable(1)
+    conn.wait_readable(0.1)
   rescue EOFError
     break
   end
@@ -65,10 +64,10 @@ def process_request(conn)
   log "#{http_method} #{path}"
 
   case [http_method, path]
-  when ["GET", "/"]
+  when ["GET", "/slow"]
     heavy_computation(100)
     reply(conn, 200, {}, "Root page")
-  when ["GET", "/hello"]
+  when ["GET", "/fast"]
     reply(conn, 200, {}, "world")
   else
     reply(conn, 404, {}, "Unknown path #{path}")

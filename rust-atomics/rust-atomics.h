@@ -14,7 +14,7 @@
 
 #define FIXED_SIZE_OBJECT_POOL_SIZE 72
 
-#define QUEUE_SIZE 32
+#define QUEUE_SIZE 48
 
 #define SLOW_OBJECT_SIZE 8
 

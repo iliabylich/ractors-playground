@@ -50,6 +50,7 @@ module CAtomics
         else
           return value
         end
+        sleep 0.001
       end
     end
 
@@ -57,6 +58,7 @@ module CAtomics
       loop do
         pushed = try_push(value)
         return if pushed
+        sleep 0.001
       end
     end
   end
