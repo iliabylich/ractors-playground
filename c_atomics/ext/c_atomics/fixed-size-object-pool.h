@@ -1,5 +1,5 @@
-#include "ruby.h"
 #include "rust-atomics.h"
+#include <ruby.h>
 
 void rb_fixed_size_object_pool_mark(void *);
 void rb_fixed_size_object_pool_free(void *);
@@ -7,7 +7,7 @@ void rb_fixed_size_object_pool_free(void *);
 const rb_data_type_t fixed_size_object_pool_data = {
     .function = {.dfree = rb_fixed_size_object_pool_free,
                  .dmark = rb_fixed_size_object_pool_mark},
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE};
+    .flags = RUBY_TYPED_FROZEN_SHAREABLE};
 
 void rb_fixed_size_object_pool_free(void *ptr) {
   fixed_size_object_pool_t *pool = ptr;

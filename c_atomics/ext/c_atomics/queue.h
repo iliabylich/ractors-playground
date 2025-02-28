@@ -1,12 +1,12 @@
-#include "ruby.h"
 #include "rust-atomics.h"
+#include <ruby.h>
 
 void rb_queue_mark(void *);
 void rb_queue_free(void *);
 
 const rb_data_type_t queue_data = {
     .function = {.dfree = rb_queue_free, .dmark = rb_queue_mark},
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE};
+    .flags = RUBY_TYPED_FROZEN_SHAREABLE};
 
 void rb_queue_free(void *ptr) {
   queue_t *queue = ptr;

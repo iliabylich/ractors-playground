@@ -1,9 +1,9 @@
-#include "ruby.h"
 #include "rust-atomics.h"
+#include <ruby.h>
 
 const rb_data_type_t plain_counter_data = {
     .function = {.dfree = RUBY_DEFAULT_FREE},
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE};
+    .flags = RUBY_TYPED_FROZEN_SHAREABLE};
 
 VALUE rb_plain_counter_alloc(VALUE klass) {
   plain_counter_t *counter;

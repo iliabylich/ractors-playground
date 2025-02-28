@@ -1,12 +1,12 @@
-#include "ruby.h"
 #include "rust-atomics.h"
+#include <ruby.h>
 #include <ruby/thread.h>
 
 void rb_slow_object_mark(void *);
 
 const rb_data_type_t slow_object_data = {
     .function = {.dmark = rb_slow_object_mark},
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE};
+    .flags = RUBY_TYPED_FROZEN_SHAREABLE};
 
 void rb_slow_object_mark(void *ptr) {
   slow_object_t *slow = ptr;
