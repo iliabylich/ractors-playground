@@ -1,5 +1,6 @@
 #include "ruby.h"
 #include "rust-atomics.h"
+#include <ruby/thread.h>
 
 void rb_slow_object_mark(void *);
 
@@ -36,10 +37,24 @@ VALUE rb_slow_object_slow_op(VALUE self) {
   return Qnil;
 }
 
+void *slow_object_slow_op_outer(void *obj) {
+  slow_object_slow_op(obj);
+  return NULL;
+}
+
+VALUE rb_slow_object_slow_op_no_gvl_lock(VALUE self) {
+  slow_object_t *slow;
+  TypedData_Get_Struct(self, slow_object_t, &slow_object_data, slow);
+  rb_thread_call_without_gvl(slow_object_slow_op_outer, slow, NULL, NULL);
+  return Qnil;
+}
+
 static void init_slow_object(VALUE rb_mCAtomics) {
   VALUE rb_cSlowObject =
       rb_define_class_under(rb_mCAtomics, "SlowObject", rb_cObject);
   rb_define_alloc_func(rb_cSlowObject, rb_slow_object_alloc);
   rb_define_method(rb_cSlowObject, "initialize", rb_slow_object_initialize, 1);
   rb_define_method(rb_cSlowObject, "slow_op", rb_slow_object_slow_op, 0);
+  rb_define_method(rb_cSlowObject, "slow_op_no_gvl_lock",
+                   rb_slow_object_slow_op_no_gvl_lock, 0);
 }

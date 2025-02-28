@@ -14,8 +14,7 @@ ensure
   $stderr = stderr
 end
 
-# trigger warnings early to not pollute benchmark's output
-disable_stderr { Ractor.new {} }
+Warning[:experimental] = false
 
 CPU_COUNT = `cat /proc/cpuinfo | grep processor | wc -l`.to_i
 puts "CPU count: #{CPU_COUNT}"
