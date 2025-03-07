@@ -16,6 +16,11 @@ pub use queue::*;
 mod slow_object;
 pub use slow_object::*;
 
+mod spmc_queue;
+pub use spmc_queue::*;
+
+mod sem;
+
 #[cfg(test)]
 pub(crate) fn is_sync_and_send<T: Sync + Send>() -> bool {
     true

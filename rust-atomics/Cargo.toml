@@ -7,11 +7,10 @@ edition = "2024"
 crate-type = ["lib", "staticlib"]
 
 [dependencies]
-concurrent-queue = "2.5.0"
 crossbeam-channel = "0.5.14"
 dashmap = "6.1.0"
 parking_lot = "0.12.3"
-scc = "2.3.3"
+libc = "0.2.170"
 
 [profile.release]
 panic = "abort"
