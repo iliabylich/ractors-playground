@@ -18,18 +18,18 @@ impl PlainCounter {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn plain_counter_init(counter: *mut PlainCounter, n: u64) {
+pub unsafe extern "C" fn plain_counter_init(counter: *mut PlainCounter, n: u64) {
     unsafe { counter.write(PlainCounter::new(n)) }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn plain_counter_increment(counter: *mut PlainCounter) {
+pub unsafe extern "C" fn plain_counter_increment(counter: *mut PlainCounter) {
     let counter = unsafe { counter.as_mut().unwrap() };
     counter.inc();
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn plain_counter_read(counter: *const PlainCounter) -> u64 {
+pub unsafe extern "C" fn plain_counter_read(counter: *const PlainCounter) -> u64 {
     let counter = unsafe { counter.as_ref().unwrap() };
     counter.read()
 }

@@ -22,18 +22,18 @@ impl AtomicCounter {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn atomic_counter_init(counter: *mut AtomicCounter, n: u64) {
+pub unsafe extern "C" fn atomic_counter_init(counter: *mut AtomicCounter, n: u64) {
     unsafe { counter.write(AtomicCounter::new(n)) }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn atomic_counter_increment(counter: *const AtomicCounter) {
+pub unsafe extern "C" fn atomic_counter_increment(counter: *const AtomicCounter) {
     let counter = unsafe { counter.as_ref().unwrap() };
     counter.inc();
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn atomic_counter_read(counter: *const AtomicCounter) -> u64 {
+pub unsafe extern "C" fn atomic_counter_read(counter: *const AtomicCounter) -> u64 {
     let counter = unsafe { counter.as_ref().unwrap() };
     counter.read()
 }

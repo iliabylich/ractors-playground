@@ -61,12 +61,12 @@ impl FixedSizeObjectPool {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn fixed_size_object_pool_alloc(pool: *mut FixedSizeObjectPool) {
+pub unsafe extern "C" fn fixed_size_object_pool_alloc(pool: *mut FixedSizeObjectPool) {
     unsafe { pool.write(FixedSizeObjectPool::new()) }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn fixed_size_object_pool_init(
+pub unsafe extern "C" fn fixed_size_object_pool_init(
     pool: *mut FixedSizeObjectPool,
     max_size: usize,
     timeout_in_ms: u64,
@@ -77,12 +77,12 @@ pub extern "C" fn fixed_size_object_pool_init(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn fixed_size_object_pool_drop(pool: *mut FixedSizeObjectPool) {
+pub unsafe extern "C" fn fixed_size_object_pool_drop(pool: *mut FixedSizeObjectPool) {
     unsafe { std::ptr::drop_in_place(pool) };
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn fixed_size_object_pool_mark(
+pub unsafe extern "C" fn fixed_size_object_pool_mark(
     pool: *const FixedSizeObjectPool,
     f: extern "C" fn(c_ulong),
 ) {
@@ -91,13 +91,13 @@ pub extern "C" fn fixed_size_object_pool_mark(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn fixed_size_object_pool_pop(pool: *mut FixedSizeObjectPool) -> PooledItem {
+pub unsafe extern "C" fn fixed_size_object_pool_pop(pool: *mut FixedSizeObjectPool) -> PooledItem {
     let pool = unsafe { pool.as_mut().unwrap() };
     pool.pop().unwrap_or(PooledItem { idx: 0, rbobj: 0 })
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn fixed_size_object_pool_push(pool: *mut FixedSizeObjectPool, idx: usize) {
+pub unsafe extern "C" fn fixed_size_object_pool_push(pool: *mut FixedSizeObjectPool, idx: usize) {
     let pool = unsafe { pool.as_mut().unwrap() };
     pool.push(idx);
 }

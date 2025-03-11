@@ -16,3 +16,8 @@ libc = "0.2.170"
 panic = "abort"
 lto = true
 codegen-units = 1
+
+[[bin]]
+bench = false
+name = "spmc_queue_simulation"
+test = false

@@ -41,11 +41,11 @@ pub struct SpmcQueue {
     ring: Vec<Slot>,
     head: AtomicUsize,
     tail: AtomicUsize,
-    len: AtomicUsize,
-    _size: usize,
-    _mask: usize,
+    capacity: usize,
     write_sem: Semaphore,
     read_sem: Semaphore,
+    consuming_locked: AtomicBool,
+    consumers_count: AtomicUsize,
 }
 
 impl SpmcQueue {
@@ -54,39 +54,40 @@ impl SpmcQueue {
             ring: vec![],
             head: AtomicUsize::new(0),
             tail: AtomicUsize::new(0),
-            len: AtomicUsize::new(0),
-            _size: 0,
-            _mask: 0,
+            capacity: 0,
             write_sem: Semaphore::alloc(),
             read_sem: Semaphore::alloc(),
+            consuming_locked: AtomicBool::new(false),
+            consumers_count: AtomicUsize::new(0),
         }
     }
 
     pub fn init(&mut self, capacity: usize, default: c_ulong) {
+        self.capacity = capacity;
         self.ring = vec![];
-        self._size = 1 << capacity;
-        self._mask = (1 << capacity) - 1;
-        self.write_sem.init(self._size as u32);
+        self.write_sem.init(self.size() as u32);
         self.read_sem.init(0);
 
-        for _ in 0..self._size {
+        for _ in 0..self.size() {
             self.ring.push(Slot::new(default));
         }
     }
 
-    pub fn len(&self) -> usize {
-        self.len.load(Ordering::SeqCst)
+    fn size(&self) -> usize {
+        1 << self.capacity
+    }
+    fn mask(&self) -> usize {
+        (1 << self.capacity) - 1
     }
 
     pub fn try_push(&self, item: c_ulong) -> bool {
-        let idx = self.tail.fetch_add(1, Ordering::SeqCst) & self._mask;
+        let idx = self.tail.fetch_add(1, Ordering::SeqCst) & self.mask();
         if self.ring[idx].valid.load(Ordering::SeqCst) {
             self.tail.fetch_sub(1, Ordering::SeqCst);
             false
         } else {
             self.ring[idx].set(item);
             self.ring[idx].valid.store(true, Ordering::SeqCst);
-            self.len.fetch_add(1, Ordering::SeqCst);
             self.read_sem.post();
             true
         }
@@ -106,25 +107,37 @@ impl SpmcQueue {
     }
 
     pub fn try_pop(&self) -> Option<c_ulong> {
-        let idx = self.head.fetch_add(1, Ordering::SeqCst) & self._mask;
-        if !self.ring[idx].valid.load(Ordering::SeqCst) {
+        self.consumers_count.fetch_add(1, Ordering::SeqCst);
+        println!("[{:?}] try_pop", std::thread::current().id());
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        let idx = self.head.fetch_add(1, Ordering::SeqCst) & self.mask();
+        let out = if !self.ring[idx].valid.load(Ordering::SeqCst) {
             self.head.fetch_sub(1, Ordering::SeqCst);
             None
         } else {
             let out = self.ring[idx].get();
             self.ring[idx].valid.store(false, Ordering::SeqCst);
-            self.len.fetch_sub(1, Ordering::SeqCst);
             self.write_sem.post();
             Some(out)
-        }
+        };
+        self.consumers_count.fetch_sub(1, Ordering::SeqCst);
+        out
     }
 
     pub fn pop(&self) -> c_ulong {
+        while self.consuming_locked.load(Ordering::SeqCst) {
+            // spin
+        }
+
         if let Some(item) = self.try_pop() {
             return item;
         }
 
         loop {
+            while self.consuming_locked.load(Ordering::SeqCst) {
+                // spin
+            }
+
             self.read_sem.wait();
             if let Some(item) = self.try_pop() {
                 return item;
@@ -132,19 +145,46 @@ impl SpmcQueue {
         }
     }
 
-    pub fn serialize(&self) -> Vec<c_ulong> {
+    pub fn with_locked_consuming<T>(&self, f: impl FnOnce() -> T) -> T {
+        self.consuming_locked.store(true, Ordering::SeqCst);
+        loop {
+            let consumers_count = self.consumers_count.load(Ordering::SeqCst);
+            if consumers_count == 0 {
+                break;
+            } else {
+                // spin until they are done
+                println!("[producer] waiting for {consumers_count} consumers to finish");
+            }
+        }
+        let out = f();
+        self.consuming_locked.store(false, Ordering::SeqCst);
+        out
+    }
+
+    fn foreach(&self, mut f: impl FnMut(c_ulong)) {
         let start_idx = self.head.load(Ordering::SeqCst);
         let end_idx = self.tail.load(Ordering::SeqCst);
-        let mut out = vec![];
         let mut i = start_idx;
         while i != end_idx {
-            dbg!(i);
-            out.push(self.ring[i].get());
+            f(self.ring[i].get());
             i += 1;
-            if i == self._size {
+            if i == self.size() {
                 i = 0;
             }
         }
+    }
+
+    fn mark(&self, mark: extern "C" fn(c_ulong)) {
+        self.with_locked_consuming(|| {
+            self.foreach(|e| mark(e));
+        })
+    }
+
+    pub fn serialize(&self) -> Vec<c_ulong> {
+        let mut out = vec![];
+        self.foreach(|e| {
+            out.push(e);
+        });
         out
     }
 }
@@ -192,31 +232,25 @@ mod tests {
     #[test]
     fn test_push_pop() {
         let q = new_q(3);
-        assert_eq!(q.len(), 0);
+        assert_eq!(q.serialize(), vec![]);
 
         assert!(q.try_push(1));
         assert_eq!(q.serialize(), vec![1]);
-        assert_eq!(q.len(), 1);
 
         assert!(q.try_push(2));
         assert_eq!(q.serialize(), vec![1, 2]);
-        assert_eq!(q.len(), 2);
 
         assert!(q.try_push(3));
         assert_eq!(q.serialize(), vec![1, 2, 3]);
-        assert_eq!(q.len(), 3);
 
         assert_eq!(q.try_pop(), Some(1));
         assert_eq!(q.serialize(), vec![2, 3]);
-        assert_eq!(q.len(), 2);
 
         assert_eq!(q.try_pop(), Some(2));
         assert_eq!(q.serialize(), vec![3]);
-        assert_eq!(q.len(), 1);
 
         assert_eq!(q.try_pop(), Some(3));
         assert_eq!(q.serialize(), vec![]);
-        assert_eq!(q.len(), 0);
 
         assert_eq!(q.try_pop(), None);
     }

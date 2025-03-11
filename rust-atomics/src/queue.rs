@@ -80,35 +80,35 @@ impl Queue {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn queue_alloc(queue: *mut Queue) {
+pub unsafe extern "C" fn queue_alloc(queue: *mut Queue) {
     unsafe { queue.write(Queue::alloc()) }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn queue_init(queue: *mut Queue, cap: usize) {
+pub unsafe extern "C" fn queue_init(queue: *mut Queue, cap: usize) {
     let queue = unsafe { queue.as_mut().unwrap() };
     queue.init(cap);
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn queue_drop(queue: *mut Queue) {
+pub unsafe extern "C" fn queue_drop(queue: *mut Queue) {
     unsafe { std::ptr::drop_in_place(queue) };
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn queue_mark(queue: *const Queue, f: extern "C" fn(c_ulong)) {
+pub unsafe extern "C" fn queue_mark(queue: *const Queue, f: extern "C" fn(c_ulong)) {
     let queue = unsafe { queue.as_ref().unwrap() };
     queue.mark(f);
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn queue_try_pop(queue: *mut Queue, fallback: c_ulong) -> c_ulong {
+pub unsafe extern "C" fn queue_try_pop(queue: *mut Queue, fallback: c_ulong) -> c_ulong {
     let queue = unsafe { queue.as_mut().unwrap() };
     queue.try_pop().unwrap_or(fallback)
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn queue_try_push(queue: *mut Queue, value: c_ulong) -> bool {
+pub unsafe extern "C" fn queue_try_push(queue: *mut Queue, value: c_ulong) -> bool {
     let queue = unsafe { queue.as_mut().unwrap() };
     queue.try_push(value)
 }

@@ -30,29 +30,29 @@ impl SlowObject {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn slow_object_alloc(slow: *mut SlowObject) {
+pub unsafe extern "C" fn slow_object_alloc(slow: *mut SlowObject) {
     unsafe { slow.write(SlowObject::allow()) }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn slow_object_init(slow: *mut SlowObject, n: u64) {
+pub unsafe extern "C" fn slow_object_init(slow: *mut SlowObject, n: u64) {
     let slow = unsafe { slow.as_mut().unwrap() };
     slow.init(n);
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn slow_object_drop(slow: *mut SlowObject) {
+pub unsafe extern "C" fn slow_object_drop(slow: *mut SlowObject) {
     unsafe { std::ptr::drop_in_place(slow) };
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn slow_object_mark(slow: *const SlowObject, f: extern "C" fn(c_ulong)) {
+pub unsafe extern "C" fn slow_object_mark(slow: *const SlowObject, f: extern "C" fn(c_ulong)) {
     let slow = unsafe { slow.as_ref().unwrap() };
     slow.mark(f);
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn slow_object_slow_op(slow: *const SlowObject) {
+pub unsafe extern "C" fn slow_object_slow_op(slow: *const SlowObject) {
     let slow = unsafe { slow.as_ref().unwrap() };
     slow.slow_op();
 }

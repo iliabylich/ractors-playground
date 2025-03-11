@@ -1,3 +1,5 @@
+#![expect(clippy::missing_safety_doc)]
+
 mod plain_counter;
 pub use plain_counter::*;
 
