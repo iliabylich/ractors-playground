@@ -1,4 +1,8 @@
-use libc::{sem_destroy, sem_init, sem_post, sem_t, sem_wait};
+use std::time::Duration;
+
+use libc::{
+    CLOCK_REALTIME, clock_gettime, sem_destroy, sem_init, sem_post, sem_t, sem_timedwait, sem_wait,
+};
 
 pub(crate) struct Semaphore {
     inner: *mut sem_t,
@@ -42,6 +46,20 @@ impl Semaphore {
             )
         }
     }
+
+    pub(crate) fn wait_for(&self, duration: Duration) -> bool {
+        let mut abstime = unsafe { std::mem::zeroed() };
+        let res = unsafe { clock_gettime(CLOCK_REALTIME, &mut abstime) };
+        if res != 0 {
+            panic!(
+                "failed to call clock_gettime: {:?}",
+                std::io::Error::last_os_error()
+            );
+        }
+        abstime.tv_nsec += duration.as_nanos() as i64;
+        let res = unsafe { sem_timedwait(self.inner, &abstime) };
+        res != -1
+    }
 }
 
 impl Drop for Semaphore {
@@ -52,3 +70,6 @@ impl Drop for Semaphore {
         }
     }
 }
+
+unsafe impl Send for Semaphore {}
+unsafe impl Sync for Semaphore {}

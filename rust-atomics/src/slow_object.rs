@@ -5,7 +5,7 @@ pub struct SlowObject {
 }
 
 impl SlowObject {
-    fn allow() -> Self {
+    fn alloc() -> Self {
         Self { n: 0 }
     }
 
@@ -31,7 +31,7 @@ impl SlowObject {
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn slow_object_alloc(slow: *mut SlowObject) {
-    unsafe { slow.write(SlowObject::allow()) }
+    unsafe { slow.write(SlowObject::alloc()) }
 }
 
 #[unsafe(no_mangle)]

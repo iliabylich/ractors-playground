@@ -18,8 +18,14 @@ pub use queue::*;
 mod slow_object;
 pub use slow_object::*;
 
-mod spmc_queue;
-pub use spmc_queue::*;
+// mod spmc_queue;
+// pub use spmc_queue::*;
+
+mod mpmc_queue;
+pub use mpmc_queue::*;
+
+mod gc_guard;
+pub(crate) use gc_guard::GcGuard;
 
 mod sem;
 

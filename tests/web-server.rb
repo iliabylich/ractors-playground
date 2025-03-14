@@ -2,10 +2,11 @@ require_relative './helper.rb'
 require 'socket'
 require 'webrick'
 
-QUEUE = CAtomics::SyncQueue.new(CPU_COUNT)
+QUEUE = CAtomics::MpmcQueue.new(16)
+# GC.disable
 
 def log(s)
-  $stderr.puts "[#{Ractor.current[:request_id]}][#{Ractor.current.name}] #{s}"
+  $stderr.puts "[#{Ractor.current.name}] #{s}"
 end
 
 def read_body(conn)
@@ -66,9 +67,9 @@ def process_request(conn)
   case [http_method, path]
   when ["GET", "/slow"]
     heavy_computation(100)
-    reply(conn, 200, {}, "Root page")
+    reply(conn, 200, {}, "the endpoint is slow (100ms)")
   when ["GET", "/fast"]
-    reply(conn, 200, {}, "world")
+    reply(conn, 200, {}, "yes, it's fast")
   else
     reply(conn, 404, {}, "Unknown path #{path}")
   end
@@ -84,24 +85,32 @@ workers = 1.upto(CPU_COUNT).map do |i|
   puts "Starting worker-#{i}..."
 
   Ractor.new(name: "worker-#{i}") do
-    while (req = QUEUE.pop) do
-      req_id, conn = req
-      Ractor.current[:request_id] = req_id
+    while (conn = QUEUE.pop) do
       process_request(conn)
     end
+    log "exiting..."
+    Ractor.yield :done
+  rescue Exception => e
+    log e.class.name + " " + e.message + " " + e.backtrace.join("\n    ")
+    Ractor.yield :crashed
   end
 end
 
+trap("SIGINT") do
+  puts "Exiting..."
+  CPU_COUNT.times { QUEUE.push(nil) }
+  p workers.map(&:take)
+  exit(0)
+end
+
 puts "Starting server..."
-req_id = 1
-Socket.tcp_server_loop(8080) do |conn, addr|
+
+server = Socket.tcp_server_loop(8080) do |conn, addr|
   # puts "Got connection, forwarding to a worker..."
 
   if ENV['SEQ']
-    Ractor.current[:request_id] = req_id
     process_request(conn)
   else
-    QUEUE.push([req_id, conn])
+    QUEUE.push(conn)
   end
-  req_id += 1
 end

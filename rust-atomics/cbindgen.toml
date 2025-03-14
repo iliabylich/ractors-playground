@@ -9,6 +9,7 @@ style = "type"
 "FixedSizeObjectPool" = "fixed_size_object_pool_t"
 "Queue" = "queue_t"
 "SlowObject" = "slow_object_t"
+"MpmcQueue" = "mpmc_queue_t"
 
 [export]
 include = ["QueuePushArg"]

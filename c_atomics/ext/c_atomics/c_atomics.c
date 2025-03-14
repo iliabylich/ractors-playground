@@ -1,6 +1,9 @@
 #include "counter.h"
 #include "fixed-size-object-pool.h"
 #include "hashmap.h"
+#include "log-on-mark.h"
+#include "mpmc-queue.h"
+#include "object-address.h"
 #include "plain-counter.h"
 #include "queue.h"
 #include "slow-object.h"
@@ -17,4 +20,7 @@ RUBY_FUNC_EXPORTED void Init_c_atomics(void) {
   init_fixed_size_object_pool(rb_mCAtomics);
   init_queue(rb_mCAtomics);
   init_slow_object(rb_mCAtomics);
+  init_mpmc_queue(rb_mCAtomics);
+  init_log_on_mark(rb_mCAtomics);
+  init_object_address(rb_mCAtomics);
 }

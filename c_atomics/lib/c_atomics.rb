@@ -3,6 +3,10 @@
 require_relative "c_atomics/version"
 require_relative "c_atomics/c_atomics"
 
+class ::Object
+  include CAtomics::ObjectAddress
+end
+
 module CAtomics
   class Error < StandardError; end
 
@@ -60,6 +64,16 @@ module CAtomics
         return if pushed
         sleep 0.001
       end
+    end
+  end
+
+  class LogOnMark
+    def initialize(inner)
+      @inner = inner
+    end
+
+    def method_missing(method_name, *args, **kwargs, &block)
+      @inner.__send__(method_name, *args, **kwargs, &block)
     end
   end
 end

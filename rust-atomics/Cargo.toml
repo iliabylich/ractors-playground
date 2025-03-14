@@ -6,6 +6,9 @@ edition = "2024"
 [lib]
 crate-type = ["lib", "staticlib"]
 
+[features]
+simulation = []
+
 [dependencies]
 crossbeam-channel = "0.5.14"
 dashmap = "6.1.0"
@@ -19,5 +22,5 @@ codegen-units = 1
 
 [[bin]]
 bench = false
-name = "spmc_queue_simulation"
+name = "mpmc_queue"
 test = false
