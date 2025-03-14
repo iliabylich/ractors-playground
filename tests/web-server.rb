@@ -1,8 +1,26 @@
 require_relative './helper.rb'
 require 'socket'
 require 'webrick'
+require 'json'
 
 QUEUE = CAtomics::MpmcQueue.new(16)
+
+class DummyConnection
+  def initialize(conn_id)
+    @conn_id = conn_id
+  end
+
+  def read_data(id)
+    {
+      loaded_using_conn_id: @conn_id,
+      id: id,
+      name: "Record #{id}"
+    }
+  end
+end
+
+connections = 1.upto(16).map { |conn_id| DummyConnection.new(conn_id) }
+CONNECTION_POOL = CAtomics::FixedSizeObjectPool.new(16, 1_000) { connections.shift }
 # GC.disable
 
 def log(s)
@@ -65,11 +83,15 @@ def process_request(conn)
   log "#{http_method} #{path}"
 
   case [http_method, path]
-  when ["GET", "/slow"]
+  in ["GET", "/slow"]
     heavy_computation(100)
     reply(conn, 200, {}, "the endpoint is slow (100ms)")
-  when ["GET", "/fast"]
+  in ["GET", "/fast"]
     reply(conn, 200, {}, "yes, it's fast")
+  in ["GET", /^\/dynamic\/(?<id>\d+)$/]
+    id = Regexp.last_match[:id].to_i
+    data = CONNECTION_POOL.with { |conn| conn.read_data(id) }
+    reply(conn, 200, {}, data.to_json)
   else
     reply(conn, 404, {}, "Unknown path #{path}")
   end
