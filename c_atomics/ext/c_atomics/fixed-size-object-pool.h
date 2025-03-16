@@ -40,11 +40,11 @@ VALUE rb_fixed_size_object_pool_initialize(VALUE self, VALUE size,
   return Qnil;
 }
 
-VALUE rb_fixed_size_object_pool_pop(VALUE self) {
+VALUE rb_fixed_size_object_pool_checkout(VALUE self) {
   fixed_size_object_pool_t *pool;
   TypedData_Get_Struct(self, fixed_size_object_pool_t,
                        &fixed_size_object_pool_data, pool);
-  PooledItem pooled = fixed_size_object_pool_pop(pool);
+  PooledItem pooled = fixed_size_object_pool_checkout(pool);
   if (pooled.idx == 0 && pooled.rbobj == 0) {
     return Qnil;
   }
@@ -54,11 +54,11 @@ VALUE rb_fixed_size_object_pool_pop(VALUE self) {
   return ary;
 }
 
-VALUE rb_fixed_size_object_pool_push(VALUE self, VALUE idx) {
+VALUE rb_fixed_size_object_pool_checkin(VALUE self, VALUE idx) {
   fixed_size_object_pool_t *pool;
   TypedData_Get_Struct(self, fixed_size_object_pool_t,
                        &fixed_size_object_pool_data, pool);
-  fixed_size_object_pool_push(pool, FIX2LONG(idx));
+  fixed_size_object_pool_checkin(pool, FIX2LONG(idx));
   return Qnil;
 }
 
@@ -69,8 +69,8 @@ static void init_fixed_size_object_pool(VALUE rb_mCAtomics) {
                        rb_fixed_size_object_pool_alloc);
   rb_define_method(rb_cFixedSizeObjectPool, "initialize",
                    rb_fixed_size_object_pool_initialize, 2);
-  rb_define_method(rb_cFixedSizeObjectPool, "pop",
-                   rb_fixed_size_object_pool_pop, 0);
-  rb_define_method(rb_cFixedSizeObjectPool, "push",
-                   rb_fixed_size_object_pool_push, 1);
+  rb_define_method(rb_cFixedSizeObjectPool, "checkout",
+                   rb_fixed_size_object_pool_checkout, 0);
+  rb_define_method(rb_cFixedSizeObjectPool, "checkin",
+                   rb_fixed_size_object_pool_checkin, 1);
 }

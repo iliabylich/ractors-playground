@@ -1,12 +1,12 @@
 require_relative './helper'
 
-objects = [["obj-1"], ["obj-2"], ["obj-3"]]
-POOL_SIZE = 3
-POOL = CAtomics::FixedSizeObjectPool.new(POOL_SIZE, 5_000) { objects.shift }
+POOL_SIZE = 5
+objects = 1.upto(POOL_SIZE).map { |i| ["pool-object-#{i}"] }
+POOL = CAtomics::FixedSizeObjectPool.new(POOL_SIZE, 1_000) { objects.shift }
 
-ractors = 1.upto(6).map do |i|
+ractors = 1.upto(POOL_SIZE).map do |i|
   Ractor.new(i) do |i|
-    30.times do |j|
+    10.times do |j|
       POOL.with do |v|
         v.push([i, j])
       end
@@ -17,4 +17,7 @@ ractors = 1.upto(6).map do |i|
 end
 
 p ractors.map(&:take)
-p POOL_SIZE.times.map { POOL.pop }
+POOL_SIZE.times do
+  p POOL.checkout
+end
+POOL.with { |obj| }

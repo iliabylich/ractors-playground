@@ -19,15 +19,15 @@ module CAtomics
 
   class FixedSizeObjectPool
     def with
-      obj_and_idx = pop
+      obj_and_idx = checkout
       if obj_and_idx.nil?
         raise 'timeout error'
       else
+        yield obj_and_idx[0]
       end
-      yield obj_and_idx[0]
     ensure
       unless obj_and_idx.nil?
-        push(obj_and_idx[1])
+        checkin(obj_and_idx[1])
       end
     end
   end

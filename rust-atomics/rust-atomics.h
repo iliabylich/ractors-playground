@@ -86,9 +86,9 @@ void fixed_size_object_pool_drop(fixed_size_object_pool_t *pool);
 
 void fixed_size_object_pool_mark(const fixed_size_object_pool_t *pool, void (*f)(unsigned long));
 
-PooledItem fixed_size_object_pool_pop(fixed_size_object_pool_t *pool);
+PooledItem fixed_size_object_pool_checkout(fixed_size_object_pool_t *pool);
 
-void fixed_size_object_pool_push(fixed_size_object_pool_t *pool, uintptr_t idx);
+void fixed_size_object_pool_checkin(fixed_size_object_pool_t *pool, uintptr_t idx);
 
 void queue_alloc(queue_t *queue);
 

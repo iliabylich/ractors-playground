@@ -28,14 +28,14 @@ impl FixedSizeObjectPool {
 
     fn init(
         &mut self,
-        max_size: usize,
+        size: usize,
         timeout_in_ms: u64,
         rb_make_obj: extern "C" fn(c_ulong) -> c_ulong,
     ) {
         self.timeout = Duration::from_millis(timeout_in_ms);
 
-        self.pool = Vec::with_capacity(max_size);
-        for idx in 0..max_size {
+        self.pool = Vec::with_capacity(size);
+        for idx in 0..size {
             self.pool.push((rb_make_obj)(0));
             self.tx.send(idx).unwrap();
         }
@@ -47,7 +47,7 @@ impl FixedSizeObjectPool {
         }
     }
 
-    fn pop(&mut self) -> Option<PooledItem> {
+    fn checkout(&mut self) -> Option<PooledItem> {
         let idx = self.rx.recv_timeout(self.timeout).ok()?;
         Some(PooledItem {
             idx,
@@ -55,7 +55,7 @@ impl FixedSizeObjectPool {
         })
     }
 
-    fn push(&mut self, idx: usize) {
+    fn checkin(&mut self, idx: usize) {
         self.tx.send(idx).unwrap();
     }
 }
@@ -91,15 +91,20 @@ pub unsafe extern "C" fn fixed_size_object_pool_mark(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn fixed_size_object_pool_pop(pool: *mut FixedSizeObjectPool) -> PooledItem {
+pub unsafe extern "C" fn fixed_size_object_pool_checkout(
+    pool: *mut FixedSizeObjectPool,
+) -> PooledItem {
     let pool = unsafe { pool.as_mut().unwrap() };
-    pool.pop().unwrap_or(PooledItem { idx: 0, rbobj: 0 })
+    pool.checkout().unwrap_or(PooledItem { idx: 0, rbobj: 0 })
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn fixed_size_object_pool_push(pool: *mut FixedSizeObjectPool, idx: usize) {
+pub unsafe extern "C" fn fixed_size_object_pool_checkin(
+    pool: *mut FixedSizeObjectPool,
+    idx: usize,
+) {
     let pool = unsafe { pool.as_mut().unwrap() };
-    pool.push(idx);
+    pool.checkin(idx);
 }
 
 pub const FIXED_SIZE_OBJECT_POOL_SIZE: usize = 72;
