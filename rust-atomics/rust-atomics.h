@@ -51,6 +51,10 @@ void atomic_counter_increment(const atomic_counter_t *counter);
 
 uint64_t atomic_counter_read(const atomic_counter_t *counter);
 
+extern unsigned long rb_hash(unsigned long obj);
+
+extern int rb_eql(unsigned long lhs, unsigned long rhs);
+
 void concurrent_hash_map_init(concurrent_hash_map_t *hashmap);
 
 void concurrent_hash_map_drop(concurrent_hash_map_t *hashmap);

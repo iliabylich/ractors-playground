@@ -1,6 +1,6 @@
 require_relative './helper'
 
-ITER_COUNT = 10
+ITER_COUNT = 1_000_000
 puts "Iterations: #{ITER_COUNT}"
 
 Key = Struct.new(:text)
@@ -16,12 +16,12 @@ def do_ractors
     map = CAtomics::ConcurrentHashMap.with_keys(KEYS)
     ractors = 1.upto(CPU_COUNT).map do |i|
       Ractor.new(map) do |map|
-          ITER_COUNT.times { map.inc_random_value(KEYS) }
+          ITER_COUNT.times { map.increment(KEYS.sample) }
           Ractor.yield :done
       end
     end
     assert_eq(ractors.map(&:take), [:done] * CPU_COUNT, 'not all workers have finished successfully')
-    assert_eq(map.sum, CPU_COUNT * ITER_COUNT, 'race condition')
+    assert_eq(map.sum(KEYS), CPU_COUNT * ITER_COUNT, 'race condition')
 end
 
 process_args

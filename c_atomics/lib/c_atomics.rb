@@ -33,14 +33,19 @@ module CAtomics
   end
 
   class ConcurrentHashMap
-    def self.with_keys(keys)
+    def self.with_keys(known_keys)
       map = new
-      keys.each { |key| map.set(key, 0) }
+      known_keys.each { |key| map.set(key, 0) }
       map
     end
 
-    def inc_random_value(keys) = fetch_and_modify(keys.sample) { |v| v + 1 }
-    def sum = KEYS.map { |k| get(k) }.sum
+    def increment(key)
+      fetch_and_modify(key) { |v| v + 1 }
+    end
+
+    def sum(known_keys)
+      known_keys.map { |k| get(k) }.sum
+    end
   end
 
   class SyncQueue

@@ -1,7 +1,29 @@
-use std::ffi::c_ulong;
+use std::ffi::{c_int, c_ulong};
+
+#[derive(Debug)]
+struct RubyHashEql(c_ulong);
+
+impl PartialEq for RubyHashEql {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { rb_eql(self.0, other.0) != 0 }
+    }
+}
+impl Eq for RubyHashEql {}
+
+impl std::hash::Hash for RubyHashEql {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let ruby_hash = unsafe { rb_hash(self.0) };
+        ruby_hash.hash(state);
+    }
+}
 
 pub struct ConcurrentHashMap {
-    map: dashmap::DashMap<c_ulong, c_ulong>,
+    map: dashmap::DashMap<RubyHashEql, c_ulong>,
+}
+
+unsafe extern "C" {
+    fn rb_hash(obj: c_ulong) -> c_ulong;
+    fn rb_eql(lhs: c_ulong, rhs: c_ulong) -> c_int;
 }
 
 impl ConcurrentHashMap {
@@ -12,10 +34,12 @@ impl ConcurrentHashMap {
     }
 
     fn get(&self, key: c_ulong) -> Option<c_ulong> {
+        let key = RubyHashEql(key);
         self.map.get(&key).map(|v| *v)
     }
 
     fn set(&self, key: c_ulong, value: c_ulong) {
+        let key = RubyHashEql(key);
         self.map.insert(key, value);
     }
 
@@ -24,12 +48,13 @@ impl ConcurrentHashMap {
     }
 
     fn fetch_and_modify(&self, key: c_ulong, f: extern "C" fn(c_ulong) -> c_ulong) {
+        let key = RubyHashEql(key);
         self.map.alter(&key, |_, v| f(v));
     }
 
     fn mark(&self, f: extern "C" fn(c_ulong)) {
         for pair in self.map.iter() {
-            f(*pair.key());
+            f(pair.key().0);
             f(*pair.value());
         }
     }
