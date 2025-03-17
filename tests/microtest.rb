@@ -1,6 +1,10 @@
 require_relative './helper'
 
-class TestCase
+GC.disable
+
+module Microtest; end
+
+class Microtest::TestCase
   def assert_eq(lhs, rhs, message = 'assertion failed')
     if lhs != rhs
       raise "#{message}: #{lhs} != #{rhs}"
@@ -38,7 +42,7 @@ class TestCase
   end
 end
 
-class Report
+class Microtest::Report
   attr_reader :passed, :failed
 
   def initialize
@@ -71,49 +75,35 @@ class Report
   end
 end
 
-class TestClassOne < TestCase
-  1.upto(20) do |i|
-    class_eval <<~RUBY
-      def test_#{i}
-        heavy_computation(rand(1000) + 1000)
-        assert_eq(1, 1)
+module Microtest
+  QUEUE = CAtomics::QueueWithMutex.new(100)
+
+  def self.run!
+    workers = 1.upto(CPU_COUNT).map do |i|
+      Ractor.new(name: "worker-#{i}") do
+        report = Report.new
+
+        while (item = QUEUE.pop) do
+          klass, method_name = item
+          klass.run(method_name, report)
+        end
+
+        Ractor.yield report
       end
-    RUBY
-  end
-end
-
-class TestClassTwo < TestCase
-  def test_that_fails
-    heavy_computation(rand(1000) + 1000)
-    assert_eq 1, 2
-  end
-end
-
-QUEUE = CAtomics::QueueWithMutex.new(8)
-
-workers = 1.upto(CPU_COUNT).map do |i|
-  Ractor.new(name: "worker-#{i}") do
-    report = Report.new
-
-    while (item = QUEUE.pop) do
-      klass, method_name = item
-      klass.run(method_name, report)
     end
 
-    Ractor.yield report
+    Microtest::TestCase.subclasses.each do |klass|
+      klass.test_methods.each do |method_name|
+        QUEUE.push([klass, method_name])
+      end
+    end
+    CPU_COUNT.times { QUEUE.push(nil) }
+
+    report = Report.new
+    workers.map(&:take).each do |subreport|
+      report.merge!(subreport)
+    end
+    puts
+    report.print
   end
 end
-
-TestCase.subclasses.each do |klass|
-  klass.test_methods.each do |method_name|
-    QUEUE.push([klass, method_name])
-  end
-end
-CPU_COUNT.times { QUEUE.push(nil) }
-
-report = Report.new
-workers.map(&:take).each do |subreport|
-  report.merge!(subreport)
-end
-puts
-report.print
