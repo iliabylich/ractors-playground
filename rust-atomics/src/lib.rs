@@ -12,14 +12,11 @@ pub use hashmap::*;
 mod fixed_size_object_pool;
 pub use fixed_size_object_pool::*;
 
-mod queue;
-pub use queue::*;
+mod queue_with_mutex;
+pub use queue_with_mutex::*;
 
 mod slow_object;
 pub use slow_object::*;
-
-// mod spmc_queue;
-// pub use spmc_queue::*;
 
 mod mpmc_queue;
 pub use mpmc_queue::*;

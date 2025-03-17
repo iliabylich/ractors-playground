@@ -14,7 +14,7 @@
 
 #define FIXED_SIZE_OBJECT_POOL_SIZE 72
 
-#define QUEUE_SIZE 48
+#define QUEUE_WITH_MUTEX_SIZE 48
 
 #define SLOW_OBJECT_SIZE 8
 
@@ -30,7 +30,7 @@ typedef struct mpmc_queue_t mpmc_queue_t;
 
 typedef struct plain_counter_t plain_counter_t;
 
-typedef struct queue_t queue_t;
+typedef struct queue_with_mutex_t queue_with_mutex_t;
 
 typedef struct slow_object_t slow_object_t;
 
@@ -90,17 +90,17 @@ PooledItem fixed_size_object_pool_checkout(fixed_size_object_pool_t *pool);
 
 void fixed_size_object_pool_checkin(fixed_size_object_pool_t *pool, uintptr_t idx);
 
-void queue_alloc(queue_t *queue);
+void queue_with_mutex_alloc(queue_with_mutex_t *queue);
 
-void queue_init(queue_t *queue, uintptr_t cap);
+void queue_with_mutex_init(queue_with_mutex_t *queue, uintptr_t cap);
 
-void queue_drop(queue_t *queue);
+void queue_with_mutex_drop(queue_with_mutex_t *queue);
 
-void queue_mark(const queue_t *queue, void (*f)(unsigned long));
+void queue_with_mutex_mark(const queue_with_mutex_t *queue, void (*f)(unsigned long));
 
-unsigned long queue_try_pop(queue_t *queue, unsigned long fallback);
+unsigned long queue_with_mutex_try_pop(queue_with_mutex_t *queue, unsigned long fallback);
 
-bool queue_try_push(queue_t *queue, unsigned long value);
+bool queue_with_mutex_try_push(queue_with_mutex_t *queue, unsigned long value);
 
 void slow_object_alloc(slow_object_t *slow);
 

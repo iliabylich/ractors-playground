@@ -1,12 +1,12 @@
 use parking_lot::Mutex;
 use std::{collections::VecDeque, ffi::c_ulong};
 
-struct Inner {
+struct UnsafeQueue {
     queue: VecDeque<c_ulong>,
     cap: usize,
 }
 
-impl Inner {
+impl UnsafeQueue {
     fn alloc() -> Self {
         Self {
             queue: VecDeque::new(),
@@ -38,14 +38,14 @@ impl Inner {
     }
 }
 
-pub struct Queue {
-    inner: Mutex<Inner>,
+pub struct QueueWithMutex {
+    inner: Mutex<UnsafeQueue>,
 }
 
-impl Queue {
+impl QueueWithMutex {
     fn alloc() -> Self {
         Self {
-            inner: Mutex::new(Inner::alloc()),
+            inner: Mutex::new(UnsafeQueue::alloc()),
         }
     }
 
@@ -80,43 +80,56 @@ impl Queue {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn queue_alloc(queue: *mut Queue) {
-    unsafe { queue.write(Queue::alloc()) }
+pub unsafe extern "C" fn queue_with_mutex_alloc(queue: *mut QueueWithMutex) {
+    unsafe { queue.write(QueueWithMutex::alloc()) }
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn queue_init(queue: *mut Queue, cap: usize) {
+pub unsafe extern "C" fn queue_with_mutex_init(queue: *mut QueueWithMutex, cap: usize) {
     let queue = unsafe { queue.as_mut().unwrap() };
     queue.init(cap);
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn queue_drop(queue: *mut Queue) {
+pub unsafe extern "C" fn queue_with_mutex_drop(queue: *mut QueueWithMutex) {
     unsafe { std::ptr::drop_in_place(queue) };
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn queue_mark(queue: *const Queue, f: extern "C" fn(c_ulong)) {
+pub unsafe extern "C" fn queue_with_mutex_mark(
+    queue: *const QueueWithMutex,
+    f: extern "C" fn(c_ulong),
+) {
     let queue = unsafe { queue.as_ref().unwrap() };
     queue.mark(f);
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn queue_try_pop(queue: *mut Queue, fallback: c_ulong) -> c_ulong {
+pub unsafe extern "C" fn queue_with_mutex_try_pop(
+    queue: *mut QueueWithMutex,
+    fallback: c_ulong,
+) -> c_ulong {
     let queue = unsafe { queue.as_mut().unwrap() };
     queue.try_pop().unwrap_or(fallback)
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn queue_try_push(queue: *mut Queue, value: c_ulong) -> bool {
+pub unsafe extern "C" fn queue_with_mutex_try_push(
+    queue: *mut QueueWithMutex,
+    value: c_ulong,
+) -> bool {
     let queue = unsafe { queue.as_mut().unwrap() };
     queue.try_push(value)
 }
 
-pub const QUEUE_SIZE: usize = 48;
+pub const QUEUE_WITH_MUTEX_SIZE: usize = 48;
 
 #[test]
 fn test_queue() {
-    assert_eq!(QUEUE_SIZE, std::mem::size_of::<Queue>(), "size mismatch");
-    assert!(crate::is_sync_and_send::<Queue>());
+    assert_eq!(
+        QUEUE_WITH_MUTEX_SIZE,
+        std::mem::size_of::<QueueWithMutex>(),
+        "size mismatch"
+    );
+    assert!(crate::is_sync_and_send::<QueueWithMutex>());
 }

@@ -89,7 +89,7 @@ class TestClassTwo < TestCase
   end
 end
 
-QUEUE = CAtomics::MpmcQueue.new(8)
+QUEUE = CAtomics::QueueWithMutex.new(8)
 
 workers = 1.upto(CPU_COUNT).map do |i|
   Ractor.new(name: "worker-#{i}") do

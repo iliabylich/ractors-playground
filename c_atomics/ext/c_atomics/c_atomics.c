@@ -5,7 +5,7 @@
 #include "mpmc-queue.h"
 #include "object-address.h"
 #include "plain-counter.h"
-#include "queue.h"
+#include "queue-with-mutex.h"
 #include "slow-object.h"
 #include <ruby.h>
 
@@ -18,7 +18,7 @@ RUBY_FUNC_EXPORTED void Init_c_atomics(void) {
   init_counter(rb_mCAtomics);
   init_hashmap(rb_mCAtomics);
   init_fixed_size_object_pool(rb_mCAtomics);
-  init_queue(rb_mCAtomics);
+  init_queue_with_mutex(rb_mCAtomics);
   init_slow_object(rb_mCAtomics);
   init_mpmc_queue(rb_mCAtomics);
   init_log_on_mark(rb_mCAtomics);

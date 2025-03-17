@@ -48,7 +48,7 @@ module CAtomics
     end
   end
 
-  class SyncQueue
+  class QueueWithMutex
     def pop
       loop do
         value = try_pop(UNDEFINED)
