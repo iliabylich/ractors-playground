@@ -3,10 +3,6 @@
 require_relative "c_atomics/version"
 require_relative "c_atomics/c_atomics"
 
-class ::Object
-  include CAtomics::ObjectAddress
-end
-
 module CAtomics
   class Error < StandardError; end
 

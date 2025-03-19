@@ -1,12 +1,12 @@
 o = Object.new
 Ractor.make_shareable(o)
-id = o.object_id
-puts "[MAIN] #{id} #{o}"
+ID = o.object_id
+puts "[MAIN] #{ID} #{o}"
 
-r = Ractor.new(id) do |id|
-    o2 = ObjectSpace._id2ref(id)
-    puts "[NON-MAIN] #{id} #{o2}"
-    Ractor.yield :done
+r = Ractor.new do
+  o2 = ObjectSpace._id2ref(ID)
+  puts "[NON-MAIN] #{ID} #{o2}"
+  Ractor.yield :done
 end
 
 r.take
