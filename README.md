@@ -10,7 +10,10 @@ Project structures:
 
 ## Building and running
 
-Make sure to have Rust and C compilers installed, also you need a tool called [`just`](https://github.com/casey/just).
+Make sure to have Rust and C compilers installed, also you need these tools:
+
+1. [`just`](https://github.com/casey/just).
+2. [`cbindgen`](https://github.com/mozilla/cbindgen)
 
 First, make sure to install Ruby dependencies by running `bundle`.
 
